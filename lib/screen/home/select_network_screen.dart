@@ -1,24 +1,35 @@
 import 'dart:convert';
-
-import 'package:algorand_dart/algorand_dart.dart';
-import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-
-// import 'package:flutter_myalgo_connect/myalgo_connect.dart';
-// import 'package:flutter_myalgo_connect/myalgo_connect_web.dart';
-import 'package:notiboy/screen/home/connect_wallet_screen.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:notiboy/constant.dart';
+import 'package:notiboy/main.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
 import 'package:notiboy/utils/string.dart';
-import 'package:notiboy/utils/text_style.dart';
 import 'package:notiboy/utils/widget.dart';
-import 'package:notiboy/widget/button.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-// final algorand = Algorand(
-//   algodClient: AlgodClient(apiUrl: AlgoExplorer.TESTNET_ALGOD_API_URL),
-//   indexerClient: IndexerClient(apiUrl: AlgoExplorer.TESTNET_INDEXER_API_URL),
-// );
+import '../../utils/shared_prefrences.dart';
+import '../../widget/button.dart';
+import 'bottom_bar_screen.dart';
+import 'channel/controllers/api_controller.dart';
+
+enum NetworkType {
+  ethereum,
+  algorand,
+}
+
+enum TransactionState {
+  disconnected,
+  connecting,
+  connected,
+  connectionFailed,
+  transferring,
+  success,
+  failed,
+}
 
 class SelectNetworkScreen extends StatefulWidget {
   const SelectNetworkScreen({Key? key}) : super(key: key);
@@ -28,13 +39,45 @@ class SelectNetworkScreen extends StatefulWidget {
 }
 
 class _SelectNetworkScreenState extends State<SelectNetworkScreen> {
+  bool mode = false;
+  int count = 0;
+
+  @override
+  void initState() {
+    count = pref?.getInt('count') ?? 0;
+    var brightness = SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    mode = brightness == Brightness.dark;
+    print("---${mode}");
+    wait();
+    super.initState();
+  }
+
+  wait() async {
+    await getTheme();
+  }
+
+  getTheme() async {
+    count == 0 ? await pref?.setBool('mode', mode) : null;
+    count == 0 ? isDark = mode : isDark = await pref?.getBool('mode') ?? false;
+    await pref?.setInt('count', 1);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: isDark ? Clr.dark : Clr.blueBg,
       body: ResponsiveBuilder(
         builder: (context, sizingInformation) {
-          return _mainBody(sizingInformation.deviceScreenType);
+          return Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                fit: BoxFit.fill,
+                image: AssetImage('assets/notiboy_cover.png'),
+              ),
+            ),
+            child: _mainBody(sizingInformation.deviceScreenType),
+          );
         },
       ),
     );
@@ -42,8 +85,6 @@ class _SelectNetworkScreenState extends State<SelectNetworkScreen> {
 
   Widget _mainBody(DeviceScreenType deviceScreenType) {
     switch (deviceScreenType) {
-      case DeviceScreenType.desktop:
-        return _buildDesktopBody();
       case DeviceScreenType.mobile:
       default:
         return _buildMobileBody();
@@ -54,107 +95,235 @@ class _SelectNetworkScreenState extends State<SelectNetworkScreen> {
     return SafeArea(
       child: Column(
         children: [
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Image.asset("assets/nb.png"),
-                  Spacer(),
-                  changeMode(
-                        () {
-                      setState(() {});
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Expanded(
+          //   flex: 1,
+          //   child: Padding(
+          //     padding: EdgeInsets.symmetric(horizontal: 20),
+          //     child: Row(
+          //       children: [
+          //         Spacer(),
+          //         changeMode(
+          //           () {
+          //             setState(() {});
+          //           },
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
           Expanded(
             flex: 9,
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 20, bottom: 50),
-                    child: Center(
-                      child: Text(
-                        Str.web3Communication,
-                        style: TextStyle(
-                          color: isDark ? Clr.white : Clr.black,
-                          fontWeight: FontWeight.bold,
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage("assets/notiboy_logo.png"),
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                  ),
-                  Text(
-                    Str.selectNetwork,
-                    style: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+                    // Padding(
+                    //   padding: EdgeInsets.only(top: 20),
+                    //   child: Center(
+                    //     child: Text(
+                    //       Str.web3Communication,
+                    //       style: TextStyle(color: isDark ? Clr.white : Clr.black, fontWeight: FontWeight.bold, fontSize: 20),
+                    //     ),
+                    //   ),
+                    // ),
+                    SizedBox(
+                      height: 25,
                     ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? Clr.blackBg : Clr.white,
-                      borderRadius: BorderRadius.circular(15),
+                    // GradientText(
+                    //   Str.connectWallet,
+                    //   style: TextStyle(
+                    //     color: isDark ? Clr.white : Clr.black,
+                    //     fontWeight: FontWeight.bold,
+                    //     fontSize: 30,
+                    //     fontStyle: FontStyle.italic,
+                    //   ),
+                    //   gradient: LinearGradient(colors: [
+                    //     Colors.blue.shade400,
+                    //     Colors.blue.shade900,
+                    //   ]),
+                    // ),
+                    Center(
+                      child: Text(
+                        Str.connectWallet,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Clr.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 25,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: networkCnt(
-                            title: "Algorand",
-                            image: "assets/algorand.png",
-                            color: isDark ? Clr.black : Clr.blueBg,
-                            onTap: () async {
-                              AlgodClient algodClient = AlgodClient(
-                                  apiUrl: PureStake.TESTNET_ALGOD_API_URL,
-                                  tokenKey: PureStake.API_TOKEN_HEADER,
-                                  debug: true
-                              );
-                              final indexerClient = IndexerClient(
-                                apiUrl: PureStake.TESTNET_INDEXER_API_URL,
-                                tokenKey: PureStake.API_TOKEN_HEADER,
-                              );
-                              final algorand = Algorand(
-                                algodClient: algodClient,
-                                indexerClient: indexerClient,
-                              );
-
-
-                              print(await algorand.status());
-                            },
-                          ),
-                        ),
-                        SizedBox(
-                          width: 15,
-                        ),
-                        Expanded(
-                          child: networkCnt(
-                            title: "Ethereum",
-                            image: "assets/ethereum.png",
-                            color: isDark ? Clr.black : Clr.blueBg,
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(
-                                builder: (context) {
-                                  return ConnectWalletScreen();
-                                },
-                              ));
-                            },
-                          ),
-                        ),
-                      ],
+                    SizedBox(
+                      height: 25,
                     ),
-                  ),
-                ],
+                    Container(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    '1.',
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 25,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 9,
+                                  child: Text(
+                                    Str.firstStep,
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    '2.',
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 25,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 9,
+                                  child: Text(
+                                    Str.secondStep,
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    '3.',
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 25,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 9,
+                                  child: Text(
+                                    Str.thirdStep,
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    '4.',
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 25,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 9,
+                                  child: Text(
+                                    Str.fourthStep,
+                                    style: TextStyle(
+                                      color: !isDark ? Clr.white : Clr.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 30,
+                    ),
+                    MyButton(
+                      height: 50,
+                      textColor: !isDark ? Clr.white : Clr.black,
+                      borderRadius: BorderRadius.all(Radius.circular(15)),
+                      title: 'Scan QR Code',
+                      buttonClr: !isDark ? Clr.dark : Clr.blueBg,
+                      onClick: () async {
+                        String? barcodeScanRes = '';
+                        barcodeScanRes = await FlutterBarcodeScanner.scanBarcode('#ff6666', 'Cancel', false, ScanMode.QR);
+                        Map dataQrcode = json.decode(barcodeScanRes);
+                        await SharedPrefManager().setString('Login', barcodeScanRes);
+                        token = dataQrcode['accessKey'];
+                        XUSERADDRESS = dataQrcode['address'];
+                        chain = dataQrcode['chain'];
+                        FirebaseMessaging.instance.getToken().then((token) {
+                          ChannelApiController().storeFCM(token ?? '');
+                        }).catchError((onError) {});
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BottomBarScreen(),
+                            ));
+                      },
+                      width: 170,
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -163,160 +332,50 @@ class _SelectNetworkScreenState extends State<SelectNetworkScreen> {
     );
   }
 
-  _buildDesktopBody() {
-    return SingleChildScrollView(
-      child: Container(
-        color: isDark ? Clr.dark : Clr.blueBgWeb,
-        height: MediaQuery
-            .of(context)
-            .size
-            .height,
-        padding: EdgeInsets.symmetric(vertical: 40, horizontal: 30),
-        child: Container(
-          padding: EdgeInsets.only(top: 20, bottom: 30, left: 20, right: 20),
-          decoration: BoxDecoration(
-            color: isDark ? Clr.black : Clr.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    changeMode(
-                          () {
-                        setState(() {});
-                      },
-                    ),
-                  ],
-                ),
-                Center(
-                  child: Image.asset(
-                    "assets/notiboy.png",
-                    width: 200,
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 20, bottom: 50),
-                  child: Center(
-                    child: Text(
-                      Str.web3Communication,
-                      style: TextStyle(
-                        color: isDark ? Clr.white : Clr.black,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: Container(
-                    padding: EdgeInsetsDirectional.all(30),
-                    width: 800,
-                    alignment: Alignment.center,
-                    height: MediaQuery
-                        .of(context)
-                        .size
-                        .height * 0.5,
-                    decoration: BoxDecoration(
-                      color: isDark ? Clr.blackBg : Clr.blueBgWeb,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          Text(
-                            Str.selectNetwork,
-                            style: TextStyle(
-                              color: isDark ? Clr.white : Clr.black,
-                              fontSize: 23,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              networkCnt(
-                                title: "Algorand",
-                                image: "assets/algorand.png",
-                                color: isDark ? Clr.black : Clr.white,
-                                onTap: () async {
-                                  AlgodClient algodClient = AlgodClient(
-                                      apiUrl: "https://mainnet-api.algonode.cloud",
-                                      debug: true
-                                  );
-                                  final indexerClient = IndexerClient(
-                                      apiUrl: "https://mainnet-idx.algonode.cloud",
-                                      debug: true
-                                  );
-                                  // "https://testnet-idx.algonode.cloud",
-                                  // "https://testnet-api.algonode.cloud"
-                                  // final algorand = Algorand(
-                                  //   algodClient: algodClient,
-                                  //   indexerClient: indexerClient,
-                                  // );
-                                  // Account account = await algorand
-                                  //     .createAccount();
-                                  // Create a connector
-                                  // final connector = WalletConnect(
-                                  //   bridge: 'https://bridge.walletconnect.org',
-                                  //   clientMeta: PeerMeta(
-                                  //     name: 'WalletConnect',
-                                  //     description: 'WalletConnect Developer App',
-                                  //     url: 'https://walletconnect.org',
-                                  //     icons: [
-                                  //       'https://gblobscdn.gitbook.com/spaces%2F-LJJeCjcLrr53DcT1Ml7%2Favatar.png?alt=media'
-                                  //     ],
-                                  //   ),
-                                  // );
-                                  // connector.on('connect', (session) {
-                                  //   print('dqqwd' + session.toString());
-                                  // });
-                                  // connector.on('session_update', (payload) =>
-                                  //     print(payload));
-                                  // connector.on('disconnect', (session) =>
-                                  //     print(session));
-                                  //
-                                  // if (!connector.connected) {
-                                  //   final session = await connector
-                                  //       .createSession(
-                                  //     chainId: 4160,
-                                  //     onDisplayUri: (uri) => print(uri),
-                                  //   );
-                                  // }
-                                },
-                              ),
-                              SizedBox(
-                                width: 50,
-                              ),
-                              networkCnt(
-                                title: "Ethereum",
-                                image: "assets/ethereum.png",
-                                color: isDark ? Clr.black : Clr.white,
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(
-                                    builder: (context) {
-                                      return ConnectWalletScreen();
-                                    },
-                                  ));
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ),
+  Widget cmnContainer(Widget widget) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        // color: Colors.blue[100],
+        gradient: LinearGradient(
+          end: Alignment.bottomCenter,
+          begin: Alignment.topCenter,
+          colors: [
+            Colors.blue[100]!,
+            Colors.blue[200]!,
+            Colors.blue[300]!,
+            Colors.blue[400]!,
+          ],
         ),
+      ),
+      child: widget,
+    );
+  }
+}
+
+class GradientText extends StatelessWidget {
+  const GradientText(
+    this.text, {
+    required this.gradient,
+    this.style,
+  });
+
+  final String text;
+  final TextStyle? style;
+  final Gradient gradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      child: Text(
+        text,
+        style: style,
+        textAlign: TextAlign.center,
       ),
     );
   }

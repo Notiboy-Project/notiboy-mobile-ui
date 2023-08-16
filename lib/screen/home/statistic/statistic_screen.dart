@@ -2,10 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:notiboy/Model/statistic/StatisticStatusModel.dart';
-import 'package:notiboy/controller/common_provider.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
+import '../../../constant.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/dropDown2.dart';
@@ -365,36 +364,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
     );
   }
 
-  statisticStatus() async {
-    final hasInternet = await checkInternets();
-    try {
-      Loader.sw();
-      final url = baseUrl + "";
-
-      dynamic response = await AllProvider().apiProvider(
-        url: url,
-        method: Method.get,
-      );
-      statisticStatusModel = await StatisticStatusModel.fromJson(response);
-
-      if (statisticStatusModel != null) {
-        MyToast().succesToast(toast: statisticStatusModel?.message.toString());
-        //Navigate screen here
-      } else {
-        if (hasInternet == true) {
-          MyToast().errorToast(toast: Validate.somethingWrong);
-        }
-      }
-      Loader.hd();
-      setState(() {});
-    } catch (error) {
-      Loader.hd();
-      print("error == ${error.toString()}");
-      if (hasInternet == true) {
-        MyToast().errorToast(toast: Validate.somethingWrong);
-      }
-    }
-  }
 
   List<PieChartSectionData> showingSections() {
     return List.generate(

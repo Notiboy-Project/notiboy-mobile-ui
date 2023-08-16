@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:notiboy/utils/const.dart';
+import '../constant.dart';
 
 class Loader {
   static sw() {
-    return navigatorKey.currentContext!.loaderOverlay.show(widget: MyLoader());
+    return navigatorKey?.currentContext!.loaderOverlay.show(widget: MyLoader());
   }
 
   static hd() {
-    return navigatorKey.currentContext!.loaderOverlay.hide();
+    return navigatorKey?.currentContext!.loaderOverlay.hide();
   }
 }
 

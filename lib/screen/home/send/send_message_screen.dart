@@ -2,19 +2,23 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:http/http.dart';
 import 'package:notiboy/Model/notification/NotificationCreateModel.dart';
-import 'package:notiboy/controller/common_provider.dart';
+import 'package:notiboy/main.dart';
+import 'package:notiboy/screen/home/notification/controllers/channels_dropdown.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/button.dart';
-import 'package:notiboy/widget/drop_down.dart';
-import 'package:notiboy/widget/loader.dart';
 import 'package:notiboy/widget/textfields.dart';
-import 'package:notiboy/widget/toast.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import '../../../constant.dart';
+import '../../../widget/select_notification_type.dart';
+import '../channel/model/channel_model.dart';
+import '../notification/controllers/api_controller.dart';
+import '../notification/notification_screen.dart';
 
 class SendMessageScreen extends StatefulWidget {
   final Function? functionCall;
@@ -31,9 +35,26 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
   TextEditingController addC = TextEditingController();
   TextEditingController messC = TextEditingController();
   TextEditingController linkC = TextEditingController();
+  bool isPublic = true;
+  String title = "true";
+
+  Data? channelData;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getTheme();
+  }
+
+  getTheme() async {
+    isDark = await pref?.getBool("mode") ?? false;
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    getTheme();
     return Scaffold(
       backgroundColor: isDark
           ? kIsWeb
@@ -52,156 +73,217 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
 
   Widget _mainBody(DeviceScreenType deviceScreenType) {
     switch (deviceScreenType) {
-      case DeviceScreenType.desktop:
-        return _buildDesktopBody();
       case DeviceScreenType.mobile:
       default:
         return _buildMobileBody();
     }
   }
 
-  _buildMobileBody() {}
-
-  _buildDesktopBody() {
-    return Container(
-      height: MediaQuery.of(context).size.height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: isDark ? Clr.bottomBg : Clr.blueBgWeb,
-      ),
-      child: SingleChildScrollView(
+  _buildMobileBody() {
+    return SafeArea(
+      child: GestureDetector(
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         child: Column(
           children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Row(
-                children: [
-                  selectImage(image: "assets/algorand.png"),
-                  Spacer(),
-                  changeMode(
-                    () {
-                      widget.functionCall?.call();
-                      setState(() {});
-                    },
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  setting(context),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  SizedBox(
-                    width: 150,
-                    child: DropDownWidgetScreen(title: "XL32...YJD"),
-                  ),
-                ],
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        BottomNavigationBar navigationBar = bottomWidgetKey
+                            .currentWidget as BottomNavigationBar;
+                        navigationBar.onTap!(0);
+                      },
+                      child: selectImage(
+                        image: "assets/nb.png",
+                        color: isDark ? Clr.mode : Clr.white,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Text(
+                      Str.notification,
+                      style: TextStyle(
+                        color: isDark ? Clr.white : Clr.black,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Spacer(),
+                    changeMode(
+                      () {
+                        widget.functionCall?.call();
+                        setState(() {});
+                      },
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    setting(context),
+                  ],
+                ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Row(
+            Expanded(
+              flex: 9,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: tabWidget(),
+                      cmnDropDown(title: "Send"),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SelectNotificationTypeDropDown(
+                                title: isPublic
+                                    ? "Public Message"
+                                    : "Personal Message",
+                                callback: (value) {
+                                  isPublic = value;
+                                  setState(() {});
+                                }),
+                          ),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          Expanded(
+                            child: SelectChannelDropDown(
+                              callback: (data) {
+                                channelData = data;
+                                setState(() {});
+                              },
+                              title: channelData?.name,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(
-                        width: 30,
+                        height: 30,
                       ),
-                      selectChannel(title: "Select Channel"),
+                      isPublic
+                          ? SizedBox()
+                          : MyTextField(
+                              controller: addC,
+                              hintText: Str.inputAdd,
+                              fillColor: isDark ? Clr.black : Clr.white,
+                              validate: "name",
+                              keyboardType: TextInputType.text,
+                              textFieldType: "name",
+                              isDense: false,
+                              inputTextStyle: TextStyle(
+                                color: isDark ? Clr.white : Clr.black,
+                              ),
+                              suffixIconConstraints:
+                                  BoxConstraints(maxWidth: 30, maxHeight: 30),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                      MyTextField(
+                        controller: messC,
+                        hintText: Str.inputMes,
+                        fillColor: isDark ? Clr.black : Clr.white,
+                        validate: "name",
+                        keyboardType: TextInputType.text,
+                        textFieldType: "name",
+                        isDense: false,
+                        inputTextStyle: TextStyle(
+                          color: isDark ? Clr.white : Clr.black,
+                        ),
+                        maxLength: 240,
+                        maxLines: 10,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      MyTextField(
+                        controller: linkC,
+                        hintText: Str.uploadLink,
+                        fillColor: isDark ? Clr.black : Clr.white,
+                        validate: "link",
+                        keyboardType: TextInputType.url,
+                        textFieldType: "link",
+                        isDense: false,
+                        inputTextStyle: TextStyle(
+                          color: isDark ? Clr.white : Clr.black,
+                        ),
+                        suffixIcon: Padding(
+                          padding: EdgeInsets.only(right: 10),
+                          child: Image.asset("assets/link.png"),
+                        ),
+                        suffixIconConstraints:
+                            BoxConstraints(maxWidth: 30, maxHeight: 30),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 30,
+                      ),
+                      MyButton(
+                        title: "Send",
+                        width: 200,
+                        onClick: () {
+                          EasyLoading.show(status: 'loading...');
+
+                          checkInternets().then((internet) async {
+                            Map data = {
+                              'message': messC.text,
+                              'link': linkC.text,
+                            };
+                            if (!isPublic) {
+                              data['receivers'] = addC.text.split(',');
+                            }
+                            if (internet) {
+                              await NotificationApiContorller()
+                                  .sendNotification(
+                                      isPublic ? 'public' : 'private',
+                                      channelData?.app_id,
+                                      data)
+                                  .then((Response value) {
+                                EasyLoading.showSuccess(
+                                    json.decode(value.body)['message']);
+                                addC.clear();
+                                linkC.clear();
+                                messC.clear();
+                              }).catchError((onError) {
+                                EasyLoading.showError(onError.toString());
+                              });
+                              NotificationScreen().createState().initState();
+                            } else {
+                              EasyLoading.showError('Internet Required');
+                            }
+                          });
+                        },
+                      ),
                     ],
                   ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  selectedIndex == 0
-                      ? SizedBox()
-                      : MyTextField(
-                          controller: addC,
-                          hintText: selectedIndex == 1 ? Str.inputAdd : Str.uploadCsv,
-                          fillColor: isDark ? Clr.black : Clr.white,
-                          validate: "name",
-                          keyboardType: TextInputType.text,
-                          textFieldType: "name",
-                          isDense: false,
-                          inputTextStyle: TextStyle(
-                            color: isDark ? Clr.white : Clr.black,
-                          ),
-                          suffixIcon: selectedIndex == 2
-                              ? Padding(
-                                  padding: EdgeInsets.only(right: 10),
-                                  child: Image.asset("assets/document_upload.png"),
-                                )
-                              : SizedBox(),
-                          suffixIconConstraints: BoxConstraints(maxWidth: 30, maxHeight: 30),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                  MyTextField(
-                    controller: messC,
-                    hintText: Str.inputMes,
-                    fillColor: isDark ? Clr.black : Clr.white,
-                    validate: "name",
-                    keyboardType: TextInputType.text,
-                    textFieldType: "name",
-                    isDense: false,
-                    inputTextStyle: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                    ),
-                    maxLength: 240,
-                    maxLines: 10,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  MyTextField(
-                    controller: addC,
-                    hintText: Str.uploadLink,
-                    fillColor: isDark ? Clr.black : Clr.white,
-                    validate: "name",
-                    keyboardType: TextInputType.text,
-                    textFieldType: "name",
-                    isDense: false,
-                    inputTextStyle: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                    ),
-                    suffixIcon: Padding(
-                      padding: EdgeInsets.only(right: 10),
-                      child: Image.asset("assets/link.png"),
-                    ),
-                    suffixIconConstraints: BoxConstraints(maxWidth: 30, maxHeight: 30),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 30,
-                  ),
-                  MyButton(
-                    title: "Send",
-                    width: 200,
-                    onClick: () {},
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -279,44 +361,5 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
         ),
       ),
     );
-  }
-
-  sendPublicMessage() async {
-    final hasInternet = await checkInternets();
-    try {
-      Loader.sw();
-      final url = baseUrl + "";
-
-      Map body = {
-        "user": ["John Doe"],
-        "message": "description",
-        "link": "0x4f4e205041525420494d414745",
-      };
-
-      String jsonString = json.encode(body);
-      dynamic response = await AllProvider().apiProvider(
-        url: url,
-        bodyData: jsonString,
-        method: Method.post,
-      );
-      notificationCreateModel = await NotificationCreateModel.fromJson(response);
-
-      if (notificationCreateModel != null) {
-        MyToast().succesToast(toast: notificationCreateModel?.message.toString());
-        //Navigate screen here
-      } else {
-        if (hasInternet == true) {
-          MyToast().errorToast(toast: Validate.somethingWrong);
-        }
-      }
-      Loader.hd();
-      setState(() {});
-    } catch (error) {
-      Loader.hd();
-      print("error == ${error.toString()}");
-      if (hasInternet == true) {
-        MyToast().errorToast(toast: Validate.somethingWrong);
-      }
-    }
   }
 }

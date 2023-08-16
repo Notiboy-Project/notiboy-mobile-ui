@@ -5,6 +5,7 @@ class MyButton extends StatelessWidget {
   double? width;
   double? height;
   Color? buttonClr;
+  Color? textColor;
   BorderRadiusGeometry? borderRadius;
   final String title;
   double? fontSize;
@@ -16,6 +17,7 @@ class MyButton extends StatelessWidget {
     this.height,
     this.buttonClr,
     this.borderRadius,
+    this.textColor,
     required this.title,
     this.fontSize,
     required this.onClick,
@@ -45,7 +47,7 @@ class MyButton extends StatelessWidget {
               title,
               style: TextStyle(
                 letterSpacing: 0.5,
-                color: Clr.white,
+                color: textColor ??  Clr.white,
                 fontSize: fontSize ?? 16,
                 fontWeight: FontWeight.w600,
               ),

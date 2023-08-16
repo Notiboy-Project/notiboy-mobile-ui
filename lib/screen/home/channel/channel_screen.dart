@@ -1,22 +1,24 @@
 import 'dart:convert';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:notiboy/Model/channel/ChannelCreateModel.dart';
-import 'package:notiboy/Model/channel/ChannelListModel.dart';
 import 'package:notiboy/Model/channel/UserListModel.dart';
-import 'package:notiboy/controller/common_provider.dart';
+import 'package:notiboy/constant.dart';
+import 'package:notiboy/main.dart';
+import 'package:notiboy/screen/home/bottom_bar_screen.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/button.dart';
-import 'package:notiboy/widget/drop_down.dart';
-import 'package:notiboy/widget/loader.dart';
 import 'package:notiboy/widget/textfields.dart';
-import 'package:notiboy/widget/toast.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import '../../../Model/user/get_user_model.dart';
+import 'controllers/api_controller.dart';
+import 'model/channel_model.dart';
 
 class ChannelScreen extends StatefulWidget {
   final Function? functionCall;
@@ -30,17 +32,40 @@ class ChannelScreen extends StatefulWidget {
 class _ChannelScreenState extends State<ChannelScreen> {
   TextEditingController searchC = TextEditingController();
   ChannelCreateModel? channelCreateModel;
-  ChannelListModel? channelListModel;
   UserListModel? userListModel;
-  final List<String> items = [
-    'Spouse',
-    'Partner',
-    'Friend',
-    'Other',
-  ];
+  GetChannelList? channelListModel;
+  List<Data>? channelList;
+  List<Data> currentFilteredList = [];
+  bool isFiltered = false;
+  int channelType = 0;
+  bool isVerifiedChannel = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    wait();
+  }
+
+  @override
+  void reassemble() {
+    getTheme();
+    super.reassemble();
+  }
+
+  wait() async {
+    getChannels();
+    await getTheme();
+  }
+
+  getTheme() async {
+    isDark = pref?.getBool("mode") ?? false;
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    getTheme();
     return Scaffold(
       backgroundColor: isDark
           ? kIsWeb
@@ -59,374 +84,10 @@ class _ChannelScreenState extends State<ChannelScreen> {
 
   Widget _mainBody(DeviceScreenType deviceScreenType) {
     switch (deviceScreenType) {
-      case DeviceScreenType.desktop:
-        return _buildDesktopBody();
       case DeviceScreenType.mobile:
       default:
         return _buildMobileBody();
     }
-  }
-
-  _buildMobileBody() {
-    return SafeArea(
-      child: GestureDetector(
-        onTap: () {
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        child: Column(
-          children: [
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    selectImage(image: "assets/algorand.png", color: isDark ? Clr.mode : Clr.white),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Text(
-                      Str.channel,
-                      style: TextStyle(
-                        color: isDark ? Clr.white : Clr.black,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Spacer(),
-                    changeMode(
-                      () {
-                        widget.functionCall?.call();
-                        setState(() {});
-                      },
-                    ),
-                    SizedBox(
-                      width: 15,
-                    ),
-                    setting(context),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 9,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      cmnDropDown(title: Str.channel),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            flex: 12,
-                            child: MyTextField(
-                              padding: EdgeInsets.zero,
-                              controller: searchC,
-                              hintText: Str.searchHint,
-                              validate: "name",
-                              keyboardType: TextInputType.text,
-                              textFieldType: "name",
-                              inputTextStyle: TextStyle(
-                                color: isDark ? Clr.white : Clr.black,
-                              ),
-                              fillColor: isDark ? Clr.black : Clr.white,
-                              prefixIcon: Image.asset("assets/search.png"),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 10,
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: selectImage(
-                              image: "assets/filter.png",
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: 3,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          return joinChannel(
-                            logo: "assets/algorand.png",
-                            message:
-                                "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
-                            cmpName: "Artificial Intelligen..",
-                            isVerify: true,
-                            btnTitle: "Exit Channel",
-                            btnColor: Clr.joinBtnCLr,
-                            onTap: () {},
-                            textColor: isDark ? Clr.white : Clr.black,
-                            logoColor: isDark ? Clr.white : Clr.blueBg,
-                            boxColor: isDark ? Clr.black : Clr.white,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  _buildDesktopBody() {
-    return Container(
-      height: MediaQuery.of(context).size.height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: isDark ? Clr.bottomBg : Clr.blueBgWeb,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Row(
-                children: [
-                  selectImage(image: "assets/algorand.png"),
-                  Spacer(),
-                  changeMode(
-                    () {
-                      widget.functionCall?.call();
-                      setState(() {});
-                    },
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  setting(context),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  SizedBox(
-                    width: 150,
-                    child: DropDownWidgetScreen(title: "XL32...YJD"),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        flex: 13,
-                        child: MyTextField(
-                          padding: EdgeInsets.zero,
-                          controller: searchC,
-                          hintText: Str.searchHint,
-                          isDense: false,
-                          validate: "name",
-                          inputTextStyle: TextStyle(
-                            color: isDark ? Clr.white : Clr.black,
-                          ),
-                          keyboardType: TextInputType.text,
-                          textFieldType: "name",
-                          fillColor: isDark ? Clr.black : Clr.white,
-                          prefixIcon: Image.asset("assets/search.png"),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      InkWell(
-                        onTap: () {
-                          createChannel();
-                        },
-                        child: selectImage(image: "assets/add.png", color: Clr.blue),
-                      ),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      selectImage(image: "assets/filter.png"),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: 3,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      return joinChannel(
-                        logo: "assets/algorand.png",
-                        message:
-                            "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
-                        cmpName: "Artificial Intelligence Channel",
-                        isVerify: true,
-                        btnTitle: "Exit Channel",
-                        btnColor: Clr.joinBtnCLr,
-                        boxColor: isDark ? Clr.black : Clr.white,
-                        logoColor: isDark ? Clr.white : Clr.blueBgWeb,
-                        textColor: isDark ? Clr.white : Clr.blue,
-                        onTap: () {},
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  createChannel() async {
-    return showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: EdgeInsets.zero,
-          content: Container(
-            padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-            width: MediaQuery.of(context).size.width * 0.3,
-            decoration: BoxDecoration(
-              color: isDark ? Clr.dark : Clr.blueBgWeb,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SizedBox(),
-                      Text(
-                        Str.createChannel,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Clr.white : Clr.black,
-                        ),
-                      ),
-                      InkWell(
-                        splashColor: Clr.trans,
-                        highlightColor: Clr.trans,
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Image.asset(
-                          "assets/close_circle.png",
-                          width: 25,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Container(
-                    alignment: Alignment.center,
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? Clr.black : Clr.white,
-                      borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: AssetImage(isDark ? "line_dark.png" : "assets/line.png"),
-                        fit: BoxFit.fill,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Image.asset("assets/add_logo.png", width: 30),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        Text(
-                          Str.uploadChannelLogo,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark ? Clr.white : Clr.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  MyTextField(
-                    controller: searchC,
-                    hintText: Str.enterChannelName,
-                    validate: "name",
-                    keyboardType: TextInputType.text,
-                    textFieldType: "name",
-                    fillColor: isDark ? Clr.black : Clr.white,
-                    inputTextStyle: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  MyTextField(
-                    controller: searchC,
-                    hintText: Str.enterChannelDisc,
-                    validate: "name",
-                    maxLines: 5,
-                    keyboardType: TextInputType.text,
-                    textFieldType: "name",
-                    fillColor: isDark ? Clr.black : Clr.white,
-                    inputTextStyle: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  MyButton(
-                    title: Str.createChannel,
-                    width: 200,
-                    fontSize: 12,
-                    onClick: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Widget joinChannel({
@@ -452,13 +113,18 @@ class _ChannelScreenState extends State<ChannelScreen> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 selectImage(
+                  isChannel: true,
+                  channelName: cmpName.characters.first,
                   image: logo,
                   color: logoColor,
-                  size: 15,
+                  size: 30,
                 ),
                 SizedBox(
                   width: 10,
@@ -506,100 +172,514 @@ class _ChannelScreenState extends State<ChannelScreen> {
     );
   }
 
-  channelCreate() async {
-    final hasInternet = await checkInternets();
-    try {
-      Loader.sw();
-      final url = baseUrl + "";
-
-      Map body = {"name": "John Doe", "description": "description", "logo": "0x4f4e205041525420494d414745"};
-
-      String jsonString = json.encode(body);
-      dynamic response = await AllProvider().apiProvider(
-        url: url,
-        bodyData: jsonString,
-        method: Method.post,
-      );
-      channelCreateModel = await ChannelCreateModel.fromJson(response);
-
-      if (channelCreateModel != null) {
-        MyToast().succesToast(toast: channelCreateModel?.message.toString());
-        //Navigate screen here
-      } else {
-        if (hasInternet == true) {
-          MyToast().errorToast(toast: Validate.somethingWrong);
-        }
-      }
-      Loader.hd();
-      setState(() {});
-    } catch (error) {
-      Loader.hd();
-      print("error == ${error.toString()}");
-      if (hasInternet == true) {
-        MyToast().errorToast(toast: Validate.somethingWrong);
-      }
-    }
+  _buildMobileBody() {
+    return SafeArea(
+      child: GestureDetector(
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: Column(
+          children: [
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            BottomNavigationBar navigationBar = bottomWidgetKey
+                                .currentWidget as BottomNavigationBar;
+                            navigationBar.onTap!(0);
+                          },
+                          child: selectImage(
+                            image: "assets/nb.png",
+                            color: isDark ? Clr.mode : Clr.white,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 10,
+                        ),
+                        Text(
+                          Str.channel,
+                          style: TextStyle(
+                            color: isDark ? Clr.white : Clr.black,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Spacer(),
+                    changeMode(
+                      () {
+                        widget.functionCall?.call();
+                        setState(() {});
+                      },
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    setting(context),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 9,
+              child: RefreshIndicator(
+                onRefresh: () {
+                  if (isVerifiedChannel) {
+                    getChannels(isFromDropDown: true);
+                  } else {
+                    getAllUnverifiedChannels();
+                  }
+                  return Future(() => false);
+                },
+                child: SingleChildScrollView(
+                  controller: channelScrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        cmnDropDown(
+                          title: Str.channel,
+                          dropdown: Visibility(
+                            visible: channelType == 0,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                verifieddropdown(),
+                                SizedBox(
+                                  width: 12,
+                                ),
+                                Text(
+                                  !isVerifiedChannel
+                                      ? 'Unverified'
+                                      : 'Verified',
+                                  style: TextStyle(
+                                      color: isDark ? Clr.white : Clr.mode,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              flex: 10,
+                              child: MyTextField(
+                                padding: EdgeInsets.zero,
+                                controller: searchC,
+                                hintText: Str.searchHint,
+                                validate: "name",
+                                keyboardType: TextInputType.text,
+                                textFieldType: "name",
+                                onChanged: (value) {
+                                  if (value.isNotEmpty) {
+                                    isFiltered = true;
+                                    currentFilteredList = channelList
+                                            ?.where((x) =>
+                                                x.name?.toLowerCase().contains(
+                                                    value.toLowerCase()) ??
+                                                false)
+                                            .toList() ??
+                                        [];
+                                  } else {
+                                    isFiltered = false;
+                                  }
+                                  setState(() {});
+                                },
+                                inputTextStyle: TextStyle(
+                                  color: isDark ? Clr.white : Clr.black,
+                                ),
+                                fillColor: isDark ? Clr.black : Clr.white,
+                                prefixIcon: Image.asset("assets/search.png"),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            Expanded(flex: 5, child: cmnDropDownForFilter()),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: isFiltered
+                              ? currentFilteredList.length
+                              : channelList?.length ?? 0,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            if (!isFiltered) if ((channelListModel
+                                        ?.pagination_meta_data?.next ??
+                                    '')
+                                .isNotEmpty) {
+                              if (index == (channelList?.length ?? 0) - 6) {
+                                getChannelsPagination();
+                              }
+                            }
+                            if (channelType == 1) {
+                              if (!((getUserModel.data?.channels ?? [])
+                                  .contains(isFiltered
+                                      ? currentFilteredList[index].app_id ?? ''
+                                      : channelList?[index].app_id ?? ''))) {
+                                return Container();
+                              }
+                            }
+                            if (channelType == 2) {
+                              if (!((getUserModel.data?.optins ?? []).contains(
+                                  isFiltered
+                                      ? currentFilteredList[index].app_id ?? ''
+                                      : channelList?[index].app_id ?? ''))) {
+                                return Container();
+                              }
+                            }
+                            return joinChannel(
+                              logo: isFiltered
+                                  ? currentFilteredList[index].logo ?? ''
+                                  : channelList?[index].logo ?? '',
+                              message: isFiltered
+                                  ? currentFilteredList[index].description ?? ''
+                                  : channelList?[index].description ?? '',
+                              cmpName: isFiltered
+                                  ? currentFilteredList[index].name ?? ''
+                                  : channelList?[index].name ?? '',
+                              isVerify: isFiltered
+                                  ? currentFilteredList[index].verified ?? false
+                                  : channelList?[index].verified ?? false,
+                              btnTitle: (getUserModel.data?.optins ?? [])
+                                      .contains(isFiltered
+                                          ? currentFilteredList[index].app_id ??
+                                              ''
+                                          : channelList?[index].app_id ?? '')
+                                  ? 'Opt-out'
+                                  : "Opt-in",
+                              btnColor: (getUserModel.data?.optins ?? [])
+                                      .contains(isFiltered
+                                          ? currentFilteredList[index].app_id ??
+                                              ''
+                                          : channelList?[index].app_id ?? '')
+                                  ? Clr.joinBtnCLr
+                                  : Clr.mode,
+                              onTap: () {
+                                if ((getUserModel.data?.optins ?? []).contains(
+                                    isFiltered
+                                        ? currentFilteredList[index].app_id ??
+                                            ''
+                                        : channelList?[index].app_id ?? '')) {
+                                  optoutChannel(isFiltered
+                                      ? currentFilteredList[index].app_id ?? ''
+                                      : channelList?[index].app_id ?? '');
+                                  return;
+                                } else {
+                                  optinChannels(isFiltered
+                                      ? currentFilteredList[index].app_id ?? ''
+                                      : channelList?[index].app_id ?? '');
+                                  return;
+                                }
+                              },
+                              textColor: isDark ? Clr.white : Clr.black,
+                              logoColor: isDark ? Clr.white : Clr.blueBg,
+                              boxColor: isDark ? Clr.black : Clr.white,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  channelList() async {
-    final hasInternet = await checkInternets();
-    try {
-      Loader.sw();
-      final url = baseUrl + "";
-
-      dynamic response = await AllProvider().apiProvider(
-        url: url,
-        method: Method.get,
-      );
-      channelListModel = await ChannelListModel.fromJson(response);
-
-      if (channelListModel != null) {
-        MyToast().succesToast(toast: channelListModel?.message.toString());
-        //Navigate screen here
-      } else {
-        if (hasInternet == true) {
-          MyToast().errorToast(toast: Validate.somethingWrong);
-        }
-      }
-      Loader.hd();
-      setState(() {});
-    } catch (error) {
-      Loader.hd();
-      print("error == ${error.toString()}");
-      if (hasInternet == true) {
-        MyToast().errorToast(toast: Validate.somethingWrong);
-      }
+  getChannels({isFromDropDown = false}) {
+    if (isFromDropDown) {
+      EasyLoading.show(status: 'Loading');
     }
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController()
+            .getAllChannels(isVerifiedChannel)
+            .then((response) async {
+          if (mounted) {
+            setState(() {
+              channelListModel =
+                  GetChannelList.fromJson(json.decode(response.body));
+              channelList = channelListModel?.data ?? ([] as List<Data>);
+              channelList?.toSet().toList();
+            });
+            if (isFromDropDown) {
+              EasyLoading.dismiss();
+            }
+          }
+        }).catchError((onError) {
+          EasyLoading.showError(onError.toString());
+        });
+      } else {
+        EasyLoading.showError('Internet Required');
+      }
+    });
   }
 
-  userList() async {
-    final hasInternet = await checkInternets();
-    try {
-      Loader.sw();
-      final url = baseUrl + "";
-
-      dynamic response = await AllProvider().apiProvider(
-        url: url,
-        method: Method.get,
-      );
-      userListModel = await UserListModel.fromJson(response);
-
-      if (userListModel != null) {
-        MyToast().succesToast(toast: userListModel?.message.toString());
-        //Navigate screen here
+  getAllUnverifiedChannels() {
+    EasyLoading.show(status: 'Loading');
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController()
+            .getAllUnverifiedChannels()
+            .then((response) async {
+          if (mounted) {
+            setState(() {
+              channelListModel =
+                  GetChannelList.fromJson(json.decode(response.body));
+              channelList = channelListModel?.data ?? ([] as List<Data>);
+            });
+            EasyLoading.dismiss();
+          }
+        }).catchError((onError) {
+          EasyLoading.showError(onError.toString());
+        });
       } else {
-        if (hasInternet == true) {
-          MyToast().errorToast(toast: Validate.somethingWrong);
+        EasyLoading.showError('Internet Required');
+      }
+    });
+  }
+
+  getChannelsPagination() {
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController()
+            .callPaginatedUrl(
+                channelListModel?.pagination_meta_data?.next ?? '')
+            .then((response) async {
+          if (!mounted) {
+            setState(() {
+              channelListModel =
+                  GetChannelList.fromJson(json.decode(response.body));
+              channelList?.addAll(channelListModel?.data ?? ([] as List<Data>));
+              channelList?.toSet().toList();
+            });
+          }
+        }).catchError((onError) {});
+      }
+    });
+  }
+
+  optinChannels(appId) {
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController()
+            .optinChannel(appId, isVerifiedChannel)
+            .then((response) async {
+          if (mounted) {
+            ChannelApiController().getUser().then((response) async {
+              if (mounted) {
+                setState(() {
+                  getUserModel =
+                      GetUserModel.fromJson(json.decode(response.body));
+                });
+              }
+              setState(() {});
+            });
+          }
+        }).catchError((onError) {
+          EasyLoading.showError(onError.toString());
+        });
+      } else {
+        EasyLoading.showError('Internet Required');
+      }
+    });
+  }
+
+  optoutChannel(appId) {
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController()
+            .optoutChannel(appId, isVerifiedChannel)
+            .then((response) async {
+          if (mounted) {
+            ChannelApiController().getUser().then((response) async {
+              if (mounted) {
+                setState(() {
+                  getUserModel =
+                      GetUserModel.fromJson(json.decode(response.body));
+                });
+              }
+              setState(() {});
+            });
+          }
+        }).catchError((onError) {
+          EasyLoading.showError(onError.toString());
+        });
+      } else {
+        EasyLoading.showError('Internet Required');
+      }
+    });
+  }
+
+  getOwnChannel() {
+    EasyLoading.show(status: 'Loading');
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController().getownedAllChannels().then((response) async {
+          if (mounted) {
+            setState(() {
+              channelListModel =
+                  GetChannelList.fromJson(json.decode(response.body));
+              channelList = channelListModel?.data ?? ([] as List<Data>);
+            });
+            EasyLoading.dismiss();
+          }
+        }).catchError((onError) {
+          EasyLoading.showError(onError.toString());
+        });
+      } else {
+        EasyLoading.showError('Internet Required');
+      }
+    });
+  }
+
+  Widget cmnDropDownForFilter() {
+    return dropdown();
+  }
+
+  Widget dropdown() {
+    return DropdownButtonHideUnderline(
+      child: DropdownButton2(
+        customButton: dpDown(
+          title: channelType == 0
+              ? "All"
+              : channelType == 1
+                  ? 'Owned'
+                  : 'Opted In',
+        ),
+        items: [
+          DropdownMenuItem(
+              child: Text('All', style: TextStyle(color: Clr.white)),
+              value: 'All'),
+          DropdownMenuItem(
+              child: Text('Owned', style: TextStyle(color: Clr.white)),
+              value: 'Owned'),
+          DropdownMenuItem(
+              child: Text('Opted In', style: TextStyle(color: Clr.white)),
+              value: 'Opt-in'),
+        ],
+        onChanged: (value) {
+          if (value == 'All') {
+            channelType = 0;
+            getChannels(isFromDropDown: true);
+          } else if (value == 'Owned') {
+            channelType = 1;
+            getOwnChannel();
+          } else if (value == 'Opt-in') {
+            channelType = 2;
+            getChannels(isFromDropDown: true);
+          }
+          setState(() {});
+        },
+        dropdownStyleData: DropdownStyleData(
+          width: MediaQuery.of(context).size.width / 2,
+          padding: EdgeInsets.symmetric(vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Clr.mode,
+          ),
+          elevation: 8,
+          offset: Offset(0, -5),
+        ),
+        menuItemStyleData: MenuItemStyleData(
+          padding: const EdgeInsets.only(left: 16, right: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget verifieddropdown() {
+    return InkWell(
+      onTap: () {
+        isVerifiedChannel = !isVerifiedChannel;
+        setState(() {});
+        if (isVerifiedChannel) {
+          getChannels(isFromDropDown: true);
+        } else if (!isVerifiedChannel) {
+          getAllUnverifiedChannels();
         }
-      }
-      Loader.hd();
-      setState(() {});
-    } catch (error) {
-      Loader.hd();
-      print("error == ${error.toString()}");
-      if (hasInternet == true) {
-        MyToast().errorToast(toast: Validate.somethingWrong);
-      }
-    }
+      },
+      child: Container(
+        alignment:
+            isVerifiedChannel ? Alignment.centerRight : Alignment.centerLeft,
+        padding: EdgeInsets.all(3.0),
+        width: 50.0,
+        height: 30.0,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.0),
+          color: isVerifiedChannel ? Clr.mode : Clr.mode,
+        ),
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          width: 20.0,
+          height: 20.0,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+    return DropdownButtonHideUnderline(
+      child: DropdownButton2(
+        customButton: selectImage(
+          image: "assets/filter.png",
+        ),
+        items: [
+          DropdownMenuItem(
+              child: Text('Verified', style: TextStyle(color: Clr.white)),
+              value: 'Verified'),
+          DropdownMenuItem(
+              child: Text('Unverified', style: TextStyle(color: Clr.white)),
+              value: 'Unverified'),
+        ],
+        onChanged: (value) {
+          if (value == 'Verified') {
+            getChannels();
+          } else if (value == 'Unverified') {
+            getAllUnverifiedChannels();
+          }
+          setState(() {});
+        },
+        dropdownStyleData: DropdownStyleData(
+          width: MediaQuery.of(context).size.width / 2,
+          padding: EdgeInsets.symmetric(vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Clr.mode,
+          ),
+          elevation: 8,
+          offset: Offset(0, -5),
+        ),
+        menuItemStyleData: MenuItemStyleData(
+          padding: const EdgeInsets.only(left: 16, right: 16),
+        ),
+      ),
+    );
   }
 }

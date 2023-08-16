@@ -1,13 +1,19 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:notiboy/constant.dart';
+import 'package:notiboy/main.dart';
 import 'package:notiboy/screen/home/setting/setting_screen.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
-import 'package:notiboy/widget/dropDown2.dart';
 import 'package:notiboy/widget/drop_down.dart';
 
-import '../screen/web/web_default_screen.dart';
-
-Widget networkCnt({required String title, required String image, required Color color, required Function() onTap}) {
+Widget networkCnt(
+    {required String title,
+    required String image,
+    required Color color,
+    required Function() onTap}) {
   return InkWell(
     highlightColor: Colors.transparent,
     splashColor: Colors.transparent,
@@ -42,12 +48,16 @@ Widget changeMode(Function? functionCall) {
   return InkWell(
     highlightColor: Clr.trans,
     splashColor: Clr.trans,
-    onTap: () {
+    onTap: () async {
+      pref?.getBool("mode");
       if (isDark == true) {
         isDark = false;
+        await pref?.setBool("mode", isDark);
       } else {
         isDark = true;
+        await pref?.setBool("mode", isDark);
       }
+      isDark = pref?.getBool("mode") ?? false;
       if (functionCall != null) functionCall.call();
     },
     child: Container(
@@ -87,8 +97,8 @@ Widget setting(BuildContext context) {
   return InkWell(
     highlightColor: Clr.trans,
     splashColor: Clr.trans,
-    onTap: () {
-      Navigator.push(context, MaterialPageRoute(
+    onTap: () async {
+      await Navigator.push(context, MaterialPageRoute(
         builder: (context) {
           return SettingScreen();
         },
@@ -112,7 +122,7 @@ Widget setting(BuildContext context) {
 Widget selectChannel({required String title}) {
   return Container(
     alignment: Alignment.center,
-    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+    padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
     // width: MediaQuery.of(context).size.width * 0.1,
     decoration: BoxDecoration(
       color: Clr.blue,
@@ -125,7 +135,7 @@ Widget selectChannel({required String title}) {
           style: TextStyle(color: Clr.white),
         ),
         SizedBox(
-          width: 50,
+          width: 10,
         ),
         Image.asset(
           "assets/arrow_down.png",
@@ -136,45 +146,74 @@ Widget selectChannel({required String title}) {
   );
 }
 
-Widget selectImage({required String image, Color? color, double? size}) {
-  return Container(
-    padding: EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: color ?? Clr.mode,
-    ),
-    child: Image.asset(
-      image,
-      width: size ?? 30,
-      fit: BoxFit.cover,
-    ),
+Widget selectImage(
+    {required String image,
+    Color? color,
+    double? size,
+    bool isChannel = false,
+    String channelName = ''}) {
+  return CircleAvatar(
+    backgroundColor: color ?? Clr.mode,
+    child: !image.contains('asset')
+        ? Container(
+            child: Image.memory(
+              base64Decode(image),
+              fit: BoxFit.fill,
+              height: 50,
+              errorBuilder: (context, error, stackTrace) {
+                return isChannel
+                    ? CircleAvatar(
+                        // backgroundColor:
+                        //     Color((Random().nextDouble() * 0xFFFFFF).toInt())
+                        //         .withOpacity(1.0),
+                        child:
+                            Text(channelName, style: TextStyle(fontSize: 25)),
+                      )
+                    : Image.asset(
+                        'assets/algorand.png',
+                        width: size ?? null,
+                        fit: BoxFit.cover,
+                      );
+              },
+            ),
+            decoration: BoxDecoration(shape: BoxShape.circle),
+            clipBehavior: Clip.hardEdge,
+          )
+        : Image.asset(
+            image,
+            width: size ?? null,
+            fit: BoxFit.cover,
+          ),
   );
 }
 
 Widget cmnDropDown({
   required String title,
+  Widget? dropdown,
 }) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
     children: [
-      Expanded(
-        flex: 6,
-        child: Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            title,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isDark ? Clr.white : Clr.black,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+      dropdown == null
+          ? Expanded(
+              flex: 6,
+              child: Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? Clr.white : Clr.black,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            )
+          : Expanded(child: dropdown,flex: 4),
       Expanded(
         flex: 3,
-        child: DropDownWidgetScreen(title: "XL32...YJD"),
+        child: DropDownWidgetScreen(title: XUSERADDRESS),
       ),
     ],
   );
@@ -204,6 +243,36 @@ Widget dpDown({required String title}) {
         Image.asset(
           "assets/arrow_down.png",
           color: Clr.blue,
+        )
+      ],
+    ),
+  );
+}
+
+Widget dpDown2({required String title}) {
+  return Container(
+    alignment: Alignment.center,
+    padding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+    decoration: BoxDecoration(
+      color: Clr.mode,
+      borderRadius: BorderRadius.circular(50),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Clr.white, fontSize: 15),
+          ),
+        ),
+        SizedBox(
+          width: 5,
+        ),
+        Image.asset(
+          "assets/arrow_down.png",
+          color: Clr.white,
         )
       ],
     ),

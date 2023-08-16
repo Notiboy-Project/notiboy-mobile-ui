@@ -12,28 +12,31 @@ import '../screen/home/setting/controllers/api_controller.dart';
 import '../service/internet_service.dart';
 import '../utils/shared_prefrences.dart';
 
-class DropDownWidgetScreen extends StatefulWidget {
-  String title;
+class SelectNotificationTypeDropDown extends StatefulWidget {
+  final Function? callback;
+  final String? title;
 
-  DropDownWidgetScreen({Key? key, required this.title}) : super(key: key);
+  SelectNotificationTypeDropDown({Key? key, this.callback, this.title}) : super(key: key);
 
   @override
-  State<DropDownWidgetScreen> createState() => _DropDownWidgetScreenState();
+  State<SelectNotificationTypeDropDown> createState() => _SelectNotificationTypeDropDownState();
 }
 
-class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
-  List<MenuItem> firstItems = [home];
-  List<MenuItem> secondItems = [logout];
+class _SelectNotificationTypeDropDownState extends State<SelectNotificationTypeDropDown> {
+  List<MenuItem> firstItems = [public];
+  List<MenuItem> secondItems = [private];
 
-  static MenuItem home = MenuItem(text: XUSERADDRESS, image: "assets/copy.png");
-  static MenuItem logout =
-      MenuItem(text: 'Log Out', image: "assets/logout.png");
+  static MenuItem public = MenuItem(text: "Public Message");
+  static MenuItem private = MenuItem(
+    text: 'Personal Message',
+  );
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonHideUnderline(
       child: DropdownButton2(
-        customButton: dpDown(title: widget.title),
+        style: TextStyle(color: Clr.white),
+        customButton: dpDown2(title: widget.title ?? ''),
         items: [
           ...firstItems.map(
             (item) => DropdownMenuItem<MenuItem>(
@@ -75,64 +78,52 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
   }
 
   Widget buildItem(MenuItem item) {
-    return Row(
-      children: [
-        Image.asset(
-          item.image,
-          color: Colors.blue,
-          width: 20,
-        ),
-        SizedBox(
-          width: 10,
-        ),
-        Flexible(
-          child: Text(
-            item.text,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      item.text,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Clr.white,
+      ),
     );
   }
 
   onChanged(BuildContext context, MenuItem item) {
-    if (item == home) {
+    if (item == public) {
+      widget.callback?.call(true);
+      setState(() {});
       Clipboard.setData(
-        ClipboardData(text: home.text),
+        ClipboardData(text: public.text),
       );
-    } else if (item == logout) {
-      EasyLoading.show(status: 'loading...');
+    } else if (item == private) {
+      widget.callback?.call(false);
+      setState(() {});
+      ClipboardData(text: private.text);
 
-      checkInternets().then((internet) async {
-        if (internet) {
-          SettingApiController().logout().then((response) async {
-            EasyLoading.dismiss();
-            await SharedPrefManager().clearAll();
-            navigatorKey?.currentState!.pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => SelectNetworkScreen(),
-                ),
-                (route) => false);
-          }).catchError((onError) {
-            EasyLoading.showError(onError.toString());
-          });
-        } else {
-          EasyLoading.showError('Internet Required');
-        }
-      });
+      // checkInternets().then((internet) async {
+      //   if (internet) {
+      //     SettingApiController().logout().then((response) async {
+      //       EasyLoading.dismiss();
+      //       await SharedPrefManager().clearAll();
+      //       navigatorKey?.currentState!.pushAndRemoveUntil(
+      //           MaterialPageRoute(
+      //             builder: (context) => SelectNetworkScreen(),
+      //           ),
+      //           (route) => false);
+      //     }).catchError((onError) {
+      //       EasyLoading.showError(onError.toString());
+      //     });
+      //   } else {
+      //     EasyLoading.showError('Internet Required');
+      //   }
+      // });
     }
   }
 }
 
 class MenuItem {
   final String text;
-  final String image;
 
   const MenuItem({
     required this.text,
-    required this.image,
   });
 }

@@ -1,15 +1,20 @@
 class Str {
   static const String title = "NotiBoy";
   static const String selectNetwork = "Select a Network";
-  static const String connectWallet = "Connect a Wallet";
-  static const String web3Communication = "Web3 communication made efficient";
+  static const String connectWallet = "Connect Your \nWallet";
+  static const String firstStep = "Connect wallet on your Notiboy web app.";
+  static const String secondStep = "Click on address drop-down.";
+  static const String thirdStep = "Click 'Scan QR for Mobile Login'.";
+  static const String fourthStep = "Scan QR code with your phone.";
+  static const String web3Communication = "Effective Communication on Web3";
+  static const String scanQRCode = "Scan QR Code from web App to Connect Mobile App";
   static const String termsCnd = "terms and conditions";
   static const String privacy = "privacy policy";
   static const String noNotification = "No Notifications Yet!";
   static const String searchHint = "Search here anything...";
   static const String findHint = "Find your answer...";
   static const String notification = "Notifications";
-  static const String channel = "Channel";
+  static const String channel = "Channels";
   static const String setting = "Settings";
   static const String support = "Support";
   static const String send = "Send";

@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:notiboy/main.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/drop_down.dart';
 import 'package:notiboy/widget/textfields.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+import '../../../constant.dart';
 
 class SupportScreen extends StatefulWidget {
   final Function? functionCall;
@@ -19,27 +21,52 @@ class SupportScreen extends StatefulWidget {
 
 class _SupportScreenState extends State<SupportScreen> {
   TextEditingController searchC = TextEditingController();
-  final List<String> items = [
-    'Spouse',
-    'Partner',
-    'Friend',
-    'Other',
-  ];
+
   List<SupportModel> queList = [
     SupportModel(
-        question: "It is a long established fact that a reader will be distracted by the readable content?",
-        answer:
-            "The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum. The point of using Lorem Ipsum is that it has a normal distribution?",
+        question: "What is the cost of creating a channel?",
+        answer: "Channel creation and verification is free of cost.",
         isClick: false),
     SupportModel(
-        question: "The point of using Lorem Ipsum is that it has a normal distribution?",
+        question: "How much does it cost to send notifications?",
         answer:
-            "The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum is that it has a normal distribution? The point of using Lorem Ipsum. The point of using Lorem Ipsum is that it has a normal distribution?",
+            "Sending notifications is free of cost. But in free tier there will be restrictions in the number of notifications that can be sent.",
+        isClick: false),
+    SupportModel(
+        question: "How can I start receiving notifications ?",
+        answer:
+            "You can start receiving notifications by opting-in to a channel. When you opt-out of a channel you will stop receiving notifications. It is free to opt-in and opt-out of a channel.",
+        isClick: false),
+    SupportModel(
+        question: "Can i get notifications via email and discord?",
+        answer:
+            "Yes, you can start getting notifications via discord & email by verifying via settings page in web app.",
+        isClick: false),
+    SupportModel(
+        question: "Are there any premium plans?",
+        answer:
+            "There are premium plans for a channel creator. Visit our web app for more details.",
         isClick: false),
   ];
 
+  List<SupportModel> currentFilteredList = [];
+  bool isFiltered = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getTheme();
+  }
+
+  getTheme() async {
+    isDark = await pref?.getBool("mode") ?? false;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    getTheme();
     return Scaffold(
       backgroundColor: isDark
           ? kIsWeb
@@ -80,9 +107,16 @@ class _SupportScreenState extends State<SupportScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    selectImage(
-                      image: "assets/algorand.png",
-                      color: isDark ? Clr.mode : Clr.white,
+                    InkWell(
+                      onTap: () {
+                        BottomNavigationBar navigationBar = bottomWidgetKey
+                            .currentWidget as BottomNavigationBar;
+                        navigationBar.onTap!(0);
+                      },
+                      child: selectImage(
+                        image: "assets/nb.png",
+                        color: isDark ? Clr.mode : Clr.white,
+                      ),
                     ),
                     SizedBox(
                       width: 10,
@@ -117,7 +151,7 @@ class _SupportScreenState extends State<SupportScreen> {
                   padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      cmnDropDown(title: "notiboy.xyz@gmail.com"),
+                      cmnDropDown(title: ''),
                       SizedBox(
                         height: 10,
                       ),
@@ -133,35 +167,65 @@ class _SupportScreenState extends State<SupportScreen> {
                         textFieldType: "name",
                         fillColor: isDark ? Clr.black : Clr.white,
                         prefixIcon: Image.asset("assets/search.png"),
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            isFiltered = true;
+                            currentFilteredList = queList
+                                .where((x) => x.question
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()))
+                                .toList();
+                          } else {
+                            isFiltered = false;
+                          }
+                          setState(() {});
+                        },
                       ),
                       SizedBox(
                         height: 10,
                       ),
                       ListView.builder(
                         physics: NeverScrollableScrollPhysics(),
-                        itemCount: queList.length,
+                        itemCount: isFiltered
+                            ? currentFilteredList.length
+                            : queList.length,
                         shrinkWrap: true,
                         itemBuilder: (context, index) {
                           return supportList(
-                            question: queList[index].question,
-                            isClick: queList[index].isClick,
-                            answer: queList[index].answer,
+                            question: isFiltered
+                                ? currentFilteredList[index].question
+                                : queList[index].question,
+                            isClick: isFiltered
+                                ? currentFilteredList[index].isClick
+                                : queList[index].isClick,
+                            answer: isFiltered
+                                ? currentFilteredList[index].answer
+                                : queList[index].answer,
                             boxColor: isDark ? Clr.black : Clr.white,
                             textStyle: TextStyle(
                               color: isDark ? Clr.white : Clr.black,
                               fontSize: 15,
                             ),
                             onTap: () {
-                              if (queList[index].isClick == true) {
-                                queList[index].isClick = false;
+                              if (isFiltered) {
+                                if (currentFilteredList[index].isClick ==
+                                    true) {
+                                  currentFilteredList[index].isClick = false;
+                                } else {
+                                  currentFilteredList[index].isClick = true;
+                                }
                               } else {
-                                queList[index].isClick = true;
+                                if (queList[index].isClick == true) {
+                                  queList[index].isClick = false;
+                                } else {
+                                  queList[index].isClick = true;
+                                }
                               }
                               setState(() {});
                             },
                           );
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -358,5 +422,6 @@ class SupportModel {
   String answer;
   bool isClick;
 
-  SupportModel({required this.question, required this.answer, required this.isClick});
+  SupportModel(
+      {required this.question, required this.answer, required this.isClick});
 }

@@ -1,44 +1,63 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:notiboy/main.dart';
+import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/const.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
+import 'package:notiboy/widget/button.dart';
 import 'package:notiboy/widget/drop_down.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+import '../../../Model/user/get_user_model.dart';
+import '../../../constant.dart';
+import '../../../utils/shared_prefrences.dart';
+import '../bottom_bar_screen.dart';
+import '../channel/controllers/api_controller.dart';
+import 'controllers/api_controller.dart';
+
 class SettingScreen extends StatefulWidget {
   final Function? functionCall;
-  const SettingScreen({Key? key,this.functionCall}) : super(key: key);
+
+  const SettingScreen({Key? key, this.functionCall}) : super(key: key);
 
   @override
   State<SettingScreen> createState() => _Setting_screenState();
 }
 
 class _Setting_screenState extends State<SettingScreen> {
-  bool isOn = false;
-  final List<String> items = [
-    'Spouse',
-    'Partner',
-    'Friend',
-    'Other',
-  ];
-  List lst = [
-    "Enter Your Email ID",
-    "Enter Your Discord Link",
-    "Enter Your Telegram Number",
-  ];
+  List<VerifyModel> verifyModel = [];
+  List<String> notify = [];
+  bool isDone = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    getUserDetails();
+    super.initState();
+    EasyLoading.show(status: 'loading...');
+  }
+
+  getTheme() async {
+    isDark = await pref?.getBool("mode") ?? false;
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
+    getTheme();
     return Scaffold(
-      backgroundColor:isDark
+      backgroundColor: isDark
           ? kIsWeb
-          ? Clr.black
-          : Clr.dark
+              ? Clr.black
+              : Clr.dark
           : kIsWeb
-          ? Clr.white
-          : Clr.blueBg,
+              ? Clr.white
+              : Clr.blueBg,
       body: ResponsiveBuilder(
         builder: (context, sizingInformation) {
           return _mainBody(sizingInformation.deviceScreenType);
@@ -49,8 +68,6 @@ class _Setting_screenState extends State<SettingScreen> {
 
   Widget _mainBody(DeviceScreenType deviceScreenType) {
     switch (deviceScreenType) {
-      case DeviceScreenType.desktop:
-        return _buildDesktopBody();
       case DeviceScreenType.mobile:
       default:
         return _buildMobileBody();
@@ -67,20 +84,16 @@ class _Setting_screenState extends State<SettingScreen> {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  selectImage(
-                    image: "assets/algorand.png",
-                    color: isDark ? Clr.mode : Clr.white,
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    Str.setting,
-                    style: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      BottomNavigationBar navigationBar =
+                          bottomWidgetKey.currentWidget as BottomNavigationBar;
+                      navigationBar.onTap!(0);
+                    },
+                    child: selectImage(
+                        image: "assets/nb.png",
+                        color: isDark ? Clr.mode : Clr.white),
                   ),
                   Spacer(),
                   changeMode(
@@ -99,25 +112,74 @@ class _Setting_screenState extends State<SettingScreen> {
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     cmnDropDown(title: Str.setting),
                     SizedBox(
                       height: 20,
                     ),
+                    SizedBox(
+                      height: 20,
+                    ),
                     ListView.builder(
-                      itemCount: lst.length,
+                      itemCount: verifyModel.length,
                       physics: NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
                         return notificationType(
-                          title: lst[index],
-                          boxColor:  isDark? Clr.black: Clr.white,
-                          off1: isDark ? "assets/off1.png" : "assets/offWb1.png",
-                          off2: isDark ? "assets/off2.png" : "assets/offWb2.png",
+                          title: verifyModel[index].isVerify
+                              ? '${index == 1 ? 'Discord ID: ' : 'Email: '}' +
+                                  verifyModel[index].ID
+                              : verifyModel[index].text,
+                          isVerify: verifyModel[index].isVerify,
+                          isOn: notify.contains(verifyModel[index]
+                                  .text
+                                  .split(" ")
+                                  .first
+                                  .toLowerCase()) ??
+                              false,
+                          boxColor: isDark ? Clr.black : Clr.white,
+                          off1:
+                              isDark ? "assets/off1.png" : "assets/offWb1.png",
+                          off2:
+                              isDark ? "assets/off2.png" : "assets/offWb2.png",
                           on1: isDark ? "assets/on1.png" : "assets/onWb1.png",
                           on2: isDark ? "assets/on2.png" : "assets/onWb2.png",
+                          index: index,
                         );
                       },
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    Center(
+                      child: MyButton(
+                        title: "Go Back",
+                        width: 200,
+                        height: 50,
+                        onClick: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    RichText(
+                      text: TextSpan(
+                          text: 'Note: Register using web app ',
+                          children: [
+                            TextSpan(
+                                text: 'app.notiboy.com',
+                                style: TextStyle(color: Clr.blue, fontSize: 19),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    launchUrls('app.notiboy.com');
+                                  }),
+                          ],
+                          style: TextStyle(
+                              color: !isDark ? Clr.black : Clr.white,
+                              fontSize: 19)),
                     ),
                   ],
                 ),
@@ -129,84 +191,15 @@ class _Setting_screenState extends State<SettingScreen> {
     );
   }
 
-  _buildDesktopBody() {
-    return Container(
-      height: MediaQuery.of(context).size.height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: isDark ? Clr.bottomBg : Clr.blueBgWeb,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Row(
-                children: [
-                  Text(
-                    Str.setting,
-                    style: TextStyle(
-                      color: isDark ? Clr.white : Clr.black,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Spacer(),
-                  changeMode(
-                    () {
-                      widget.functionCall?.call();
-                      setState(() {});
-                    },
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  selectImage(image: "assets/algorand.png"),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  SizedBox(
-                    width: 150,
-                    child: DropDownWidgetScreen(title: "XL32...YJD"),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              child: Column(
-                children: [
-                  ListView.builder(
-                    itemCount: lst.length,
-                    physics: NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemBuilder: (context, index) {
-                      return notificationType(
-                        title: lst[index],
-                        boxColor: isDark ? Clr.black : Clr.white,
-                        off1: isDark ? "assets/off1.png" : "assets/offWb1.png",
-                        off2: isDark ? "assets/off2.png" : "assets/offWb2.png",
-                        on1: isDark ? "assets/on1.png" : "assets/onWb1.png",
-                        on2: isDark ? "assets/on2.png" : "assets/onWb2.png",
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget notificationType({
     required String title,
+    required bool isVerify,
+    required bool isOn,
     required String on1,
     required String on2,
     required String off1,
     required String off2,
+    required int index,
     Color? boxColor,
   }) {
     return Padding(
@@ -225,33 +218,46 @@ class _Setting_screenState extends State<SettingScreen> {
               title,
               style: TextStyle(color: Clr.hint, fontSize: 15),
             ),
-            InkWell(
-              onTap: () {
-                if (isOn == true) {
-                  isOn = false;
-                } else {
-                  isOn = true;
-                }
-
-                setState(() {});
-              },
-              child: Stack(
-                children: [
-                  Image.asset(isOn ? on1 : off1, width: 30),
-                  isOn
-                      ? Positioned(
-                          right: 0.3,
-                          bottom: 0.3,
-                          top: 0.3,
-                          child: Image.asset(on2),
-                        )
-                      : Positioned(
-                          left: 0.3,
-                          bottom: 0.3,
-                          top: 0.3,
-                          child: Image.asset(off2),
-                        ),
-                ],
+            Visibility(
+              visible: isVerify,
+              child: InkWell(
+                onTap: () async {
+                  if (isOn == true) {
+                    notify.removeWhere((element) =>
+                        element ==
+                        verifyModel[index].text.split(" ").first.toLowerCase());
+                    isOn = false;
+                    SettingApiController().notification(notify.toList());
+                    setState(() {});
+                  } else {
+                    isOn = true;
+                    notify.add(
+                        verifyModel[index].text.split(" ").first.toLowerCase());
+                    SettingApiController().notification(notify);
+                    setState(() {});
+                  }
+                },
+                child: Container(
+                  width: 50.0,
+                  height: 30.0,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24.0),
+                    color: isOn ? Colors.blue : Colors.grey,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(3.0),
+                    child: Container(
+                      alignment:
+                          isOn ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        width: 20.0,
+                        height: 20.0,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -259,4 +265,41 @@ class _Setting_screenState extends State<SettingScreen> {
       ),
     );
   }
+
+  getUserDetails() {
+    notify.clear();
+    verifyModel.clear();
+    checkInternets().then((internet) async {
+      if (internet) {
+        ChannelApiController().getUser().then((response) async {
+          EasyLoading.dismiss();
+          getUserModel = GetUserModel.fromJson(json.decode(response.body));
+          Map<String, dynamic> userdata = jsonDecode(response.body);
+          Map mediumData = (userdata['data']['medium_metadata'] as Map);
+          mediumData.keys.forEach((element) {
+            verifyModel.add(VerifyModel(
+                mediumData[element]['ID'],
+                mediumData[element]['Verified'],
+                '${element} is ${mediumData[element]['Verified'] ? 'Verified' : 'Not Verified'}'));
+          });
+
+          getUserModel.data?.allowed_mediums?.forEach((element) {
+            notify.add(element.toString().toLowerCase());
+          });
+
+          setState(() {});
+        });
+      } else {
+        EasyLoading.showError('Internet Required');
+      }
+    });
+  }
+}
+
+class VerifyModel {
+  String ID = '';
+  bool isVerify = false;
+  String text = '';
+
+  VerifyModel(this.ID, this.isVerify, this.text);
 }
