@@ -84,7 +84,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   SizedBox(
                     width: 15,
                   ),
-                  setting(context),
+                  setting(context, () {
+                    setState(() {});
+                  })
                 ],
               ),
             ),
@@ -253,7 +255,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
                   SizedBox(
                     width: 15,
                   ),
-                  setting(context),
+                  setting(context, () {
+                    setState(() {});
+                  }),
                   SizedBox(
                     width: 15,
                   ),
@@ -363,7 +367,6 @@ class _StatisticScreenState extends State<StatisticScreen> {
       ),
     );
   }
-
 
   List<PieChartSectionData> showingSections() {
     return List.generate(

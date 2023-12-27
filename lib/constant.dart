@@ -1,18 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:http/http.dart' as http;
 import 'Model/user/get_user_model.dart';
 
 bool isDark = false;
 const version = 'v1';
-String token = '';
-String XUSERADDRESS = '';
-String chain = '';
 GlobalKey<NavigatorState>? navigatorKey = GlobalKey();
+// const url = '${'https://testnet.notiboy.com/api/stage'}/$version';
 const url = '${'https://app.notiboy.com/api'}/$version';
-late GetUserModel getUserModel;
-var bottomWidgetKey = new GlobalKey<State<BottomNavigationBar>>();
+GetUserModel? getUserModel;
+
+var bottomWidgetKey = GlobalKey<State<BottomNavigationBar>>();
+var client = new http.Client();
 
 Future<void> launchUrls(url) async {
   if (!url.toString().contains('http')) {
@@ -24,6 +25,8 @@ Future<void> launchUrls(url) async {
     throw Exception('Could not launch $url');
   }
 }
+
+
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${this.substring(1).toLowerCase()}";

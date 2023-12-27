@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefManager {
@@ -76,11 +78,18 @@ class SharedPrefManager {
     return _prefs?.clear() ?? Future.value(false);
   }
 
-  void setBayadToken(String token) {
-    setString("oppBayadToken", token);
+  Future<List> getCurrentNetworkData() async {
+    String? loginData = await SharedPrefManager().getString('Login');
+    List listData = json.decode(loginData ?? '{}');
+    List data = listData
+        .where((element) => element['currentlogin'] == 0)
+        .toList();
+    return data;
+  }Future<List> getAllNetworkData() async {
+    String? loginData = await SharedPrefManager().getString('Login');
+    List listData = json.decode(loginData ?? '{}');
+
+    return listData;
   }
 
-  Future<String?> getBayadToken() async {
-    return await getString("oppBayadToken");
-  }
 }

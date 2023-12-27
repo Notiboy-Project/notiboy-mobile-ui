@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,11 +7,14 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:notiboy/constant.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/widget.dart';
+import 'package:provider/provider.dart';
 
+import '../screen/home/SplashScreen.dart';
 import '../screen/home/bottom_bar_screen.dart';
 import '../screen/home/select_network_screen.dart';
 import '../screen/home/setting/controllers/api_controller.dart';
 import '../service/internet_service.dart';
+import '../service/notifier.dart';
 import '../utils/shared_prefrences.dart';
 
 class DropDownWidgetScreen extends StatefulWidget {
@@ -25,12 +30,18 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
   List<MenuItem> firstItems = [home];
   List<MenuItem> secondItems = [logout];
 
-  static MenuItem home = MenuItem(text: XUSERADDRESS, image: "assets/copy.png");
+  static MenuItem home = MenuItem(text:  Provider.of<MyChangeNotifier>(
+      navigatorKey!
+          .currentState!
+          .context,
+      listen: false)
+      .XUSERADDRESS , image: "assets/copy.png");
   static MenuItem logout =
       MenuItem(text: 'Log Out', image: "assets/logout.png");
 
   @override
   Widget build(BuildContext context) {
+    firstItems = [MenuItem(text:  widget.title, image: "assets/copy.png")];
     return DropdownButtonHideUnderline(
       child: DropdownButton2(
         customButton: dpDown(title: widget.title),
@@ -68,7 +79,7 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
             8,
             ...List<double>.filled(secondItems.length, 48),
           ],
-          padding: const EdgeInsets.only(left: 16, right: 16),
+          padding: EdgeInsets.only(left: 16, right: 16),
         ),
       ),
     );
@@ -110,10 +121,25 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
         if (internet) {
           SettingApiController().logout().then((response) async {
             EasyLoading.dismiss();
-            await SharedPrefManager().clearAll();
+            List listData = await SharedPrefManager().getAllNetworkData();
+            List data = listData
+                .where((element) => element['currentlogin'] == 0)
+                .toList();
+
+            if (data.isNotEmpty) {
+              data.removeAt(0);
+            }
+            List datas = listData
+                .where((element) => element['currentlogin'] == 1)
+                .toList();
+            if (datas.isNotEmpty) {
+              datas.first['currentlogin'] = 0;
+            }
+            await SharedPrefManager().setString('Login', jsonEncode(datas));
+
             navigatorKey?.currentState!.pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (context) => SelectNetworkScreen(),
+                  builder: (context) => SplashScreen(),
                 ),
                 (route) => false);
           }).catchError((onError) {

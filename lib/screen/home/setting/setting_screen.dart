@@ -1,20 +1,26 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:notiboy/main.dart';
+import 'package:notiboy/screen/home/SplashScreen.dart';
+import 'package:notiboy/screen/home/select_network_screen.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/button.dart';
 import 'package:notiboy/widget/drop_down.dart';
+import 'package:notiboy/widget/loader.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../Model/user/get_user_model.dart';
 import '../../../constant.dart';
+import '../../../service/notifier.dart';
 import '../../../utils/shared_prefrences.dart';
 import '../bottom_bar_screen.dart';
 import '../channel/controllers/api_controller.dart';
@@ -70,11 +76,11 @@ class _Setting_screenState extends State<SettingScreen> {
     switch (deviceScreenType) {
       case DeviceScreenType.mobile:
       default:
-        return _buildMobileBody();
+        return _buildMobileBody(context);
     }
   }
 
-  _buildMobileBody() {
+  _buildMobileBody(context) {
     return SafeArea(
       child: Column(
         children: [
@@ -96,12 +102,12 @@ class _Setting_screenState extends State<SettingScreen> {
                         color: isDark ? Clr.mode : Clr.white),
                   ),
                   Spacer(),
-                  changeMode(
-                    () {
-                      widget.functionCall?.call();
-                      setState(() {});
-                    },
-                  ),
+                  // changeMode(
+                  //   () {
+                  //     widget.functionCall?.call();
+                  //     setState(() {});
+                  //   },
+                  // ),
                 ],
               ),
             ),
@@ -121,33 +127,326 @@ class _Setting_screenState extends State<SettingScreen> {
                     SizedBox(
                       height: 20,
                     ),
-                    ListView.builder(
-                      itemCount: verifyModel.length,
-                      physics: NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        return notificationType(
-                          title: verifyModel[index].isVerify
-                              ? '${index == 1 ? 'Discord ID: ' : 'Email: '}' +
-                                  verifyModel[index].ID
-                              : verifyModel[index].text,
-                          isVerify: verifyModel[index].isVerify,
-                          isOn: notify.contains(verifyModel[index]
-                                  .text
-                                  .split(" ")
-                                  .first
-                                  .toLowerCase()) ??
-                              false,
-                          boxColor: isDark ? Clr.black : Clr.white,
-                          off1:
-                              isDark ? "assets/off1.png" : "assets/offWb1.png",
-                          off2:
-                              isDark ? "assets/off2.png" : "assets/offWb2.png",
-                          on1: isDark ? "assets/on1.png" : "assets/onWb1.png",
-                          on2: isDark ? "assets/on2.png" : "assets/onWb2.png",
-                          index: index,
-                        );
-                      },
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDark ? Clr.black : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          settingWidget(
+                            title: "Toggle Medium",
+                            icon: Icons.data_saver_on,
+                            onTap: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (___) {
+                                    return AlertDialog(
+                                        backgroundColor: isDark
+                                            ? kIsWeb
+                                                ? Clr.black
+                                                : Clr.dark
+                                            : kIsWeb
+                                                ? Clr.white
+                                                : Clr.blueBg,
+                                        scrollable: true,
+                                        title: Text(
+                                          'Mediums',
+                                          style: TextStyle(
+                                              color: isDark
+                                                  ? Clr.white
+                                                  : Clr.black),
+                                        ),
+                                        content: StatefulBuilder(builder:
+                                            (thisLowerContext, innerSetState) {
+                                          return Column(
+                                            children: [
+                                              Container(
+                                                height: 200,
+                                                // Change as per your requirement
+                                                width: 300.0,
+                                                // Change as per your requirement
+                                                child: ListView.builder(
+                                                  itemCount: verifyModel.length,
+                                                  shrinkWrap: true,
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    return notificationType(
+                                                      callback: () {
+                                                        innerSetState(
+                                                          () {},
+                                                        );
+                                                      },
+                                                      title: verifyModel[index]
+                                                              .isVerify
+                                                          ? '${index == 1 ? 'Discord ID: ' : 'Email: '}' +
+                                                              verifyModel[index]
+                                                                  .ID
+                                                          : verifyModel[index]
+                                                              .text,
+                                                      isVerify:
+                                                          verifyModel[index]
+                                                              .isVerify,
+                                                      isDark: isDark,
+                                                      isOn: notify.contains(
+                                                              verifyModel[index]
+                                                                  .text
+                                                                  .split(" ")
+                                                                  .first
+                                                                  .toLowerCase()) ??
+                                                          false,
+                                                      off1: isDark
+                                                          ? "assets/off1.png"
+                                                          : "assets/offWb1.png",
+                                                      off2: isDark
+                                                          ? "assets/off2.png"
+                                                          : "assets/offWb2.png",
+                                                      on1: isDark
+                                                          ? "assets/on1.png"
+                                                          : "assets/onWb1.png",
+                                                      on2: isDark
+                                                          ? "assets/on2.png"
+                                                          : "assets/onWb2.png",
+                                                      index: index,
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }));
+                                  });
+                            },
+                          ),
+                          Divider(
+                            color: Clr.grey,
+                            thickness: 1,
+                          ),
+                          settingWidget(
+                            title: "Switch Network",
+                            icon: Icons.swipe,
+                            onTap: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (___) {
+                                    return AlertDialog(
+                                      backgroundColor: isDark
+                                          ? kIsWeb
+                                              ? Clr.black
+                                              : Clr.dark
+                                          : kIsWeb
+                                              ? Clr.white
+                                              : Clr.blueBg,
+                                      scrollable: true,
+                                      title: Text(
+                                        'Accounts',
+                                        style: TextStyle(
+                                            color:
+                                                isDark ? Clr.white : Clr.black),
+                                      ),
+                                      content: Column(
+                                        children: [
+                                          FutureBuilder(
+                                            future: SharedPrefManager()
+                                                .getString('Login'),
+                                            builder: (__,
+                                                AsyncSnapshot<String?>
+                                                    snapshot) {
+                                              if (snapshot.hasData &&
+                                                  !snapshot.hasError) {
+                                                List data = json.decode(
+                                                    snapshot.data ?? '[{}]');
+                                                return Container(
+                                                  height: 300.0,
+                                                  // Change as per your requirement
+                                                  width: 300.0,
+                                                  // Change as per your requirement
+                                                  child: ListView.builder(
+                                                    shrinkWrap: true,
+                                                    itemCount: data.length,
+                                                    itemBuilder:
+                                                        (BuildContext _,
+                                                            int index) {
+                                                      return InkWell(
+                                                        onTap: () async {
+                                                          Navigator.pop(_);
+                                                          await Future.delayed(
+                                                              Duration(
+                                                                  microseconds:
+                                                                      254),
+                                                              () async {
+                                                            EasyLoading.show();
+                                                            Provider.of<MyChangeNotifier>(
+                                                                    navigatorKey!
+                                                                        .currentState!
+                                                                        .context,
+                                                                    listen:
+                                                                        false)
+                                                                .settoken = data[
+                                                                    index]
+                                                                ['accessKey'];
+
+                                                            Provider.of<MyChangeNotifier>(
+                                                                    navigatorKey!
+                                                                        .currentState!
+                                                                        .context,
+                                                                    listen:
+                                                                        false)
+                                                                .setXUSERADDRESS = data[
+                                                                    index]
+                                                                ['address'];
+                                                            Provider.of<MyChangeNotifier>(
+                                                                        navigatorKey!
+                                                                            .currentState!
+                                                                            .context,
+                                                                        listen:
+                                                                            false)
+                                                                    .setchain =
+                                                                data[index]
+                                                                    ['chain'];
+                                                            data[index][
+                                                                'currentlogin'] = 0;
+                                                            String?
+                                                                loginOldData =
+                                                                await SharedPrefManager()
+                                                                    .getString(
+                                                                        'Login');
+                                                            List<dynamic>
+                                                                updateData =
+                                                                json.decode(
+                                                                    loginOldData ??
+                                                                        '[{}]');
+                                                            updateData.forEach(
+                                                                (element) {
+                                                              element[
+                                                                  'currentlogin'] = 1;
+                                                            });
+                                                            updateData
+                                                                .where((element) =>
+                                                                    element[
+                                                                        'address'] ==
+                                                                    data[index][
+                                                                        'address'])
+                                                                .toList()
+                                                                .first['currentlogin'] = 0;
+                                                            await SharedPrefManager()
+                                                                .setString(
+                                                                    'Login',
+                                                                    jsonEncode(
+                                                                        updateData));
+                                                            EasyLoading
+                                                                .dismiss();
+                                                          });
+                                                          Future.delayed(
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    600),
+                                                            () {
+                                                              Navigator
+                                                                  .pushAndRemoveUntil(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        const BottomBarScreen()),
+                                                                (route) =>
+                                                                    false,
+                                                              );
+                                                            },
+                                                          );
+                                                        },
+                                                        child: Container(
+                                                          decoration: BoxDecoration(
+                                                              border: Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                                                                              listen:
+                                                                                  false)
+                                                                          .XUSERADDRESS ==
+                                                                      data[index]
+                                                                              [
+                                                                              'address']
+                                                                          .toString()
+                                                                  ? Border.all(
+                                                                      color: Colors
+                                                                          .blue)
+                                                                  : null),
+                                                          child: Card(
+                                                            color: isDark
+                                                                ? kIsWeb
+                                                                    ? Clr.black
+                                                                    : Clr.dark
+                                                                : kIsWeb
+                                                                    ? Clr.white
+                                                                    : Clr
+                                                                        .blueBg,
+                                                            child: Padding(
+                                                              padding: EdgeInsets
+                                                                  .symmetric(
+                                                                      vertical:
+                                                                          10,
+                                                                      horizontal:
+                                                                          5),
+                                                              child: Row(
+                                                                children: [
+                                                                  Text(
+                                                                    data[index][
+                                                                            'chain']
+                                                                        .toString(),
+                                                                    style: TextStyle(
+                                                                        color: isDark
+                                                                            ? Clr.white
+                                                                            : Clr.black),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    width: 20,
+                                                                  ),
+                                                                  Flexible(
+                                                                    child: Text(
+                                                                      data[index]
+                                                                              [
+                                                                              'address']
+                                                                          .toString(),
+                                                                      style: TextStyle(
+                                                                          color: isDark
+                                                                              ? Clr.white
+                                                                              : Clr.black),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                );
+                                              }
+                                              return CircularProgressIndicator();
+                                            },
+                                          ),
+                                          Center(
+                                            child: MyButton(
+                                              title: "Add Network",
+                                              width: 200,
+                                              height: 50,
+                                              onClick: () {
+                                                Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          SelectNetworkScreen(),
+                                                    ));
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     SizedBox(
                       height: 20,
@@ -191,6 +490,43 @@ class _Setting_screenState extends State<SettingScreen> {
     );
   }
 
+  Widget settingWidget({
+    required String title,
+    required IconData icon,
+    required Function() onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: isDark ? Clr.mode : Clr.light,
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Icon(icon, color: isDark ? Clr.white : Clr.black),
+            ),
+            SizedBox(
+              width: 15,
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                color: isDark ? Clr.white : Clr.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+            Spacer(),
+            Icon(Icons.arrow_forward_ios, color: Clr.grey, size: 15),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget notificationType({
     required String title,
     required bool isVerify,
@@ -200,7 +536,8 @@ class _Setting_screenState extends State<SettingScreen> {
     required String off1,
     required String off2,
     required int index,
-    Color? boxColor,
+    required bool isDark,
+    required Function callback,
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: 15),
@@ -208,15 +545,18 @@ class _Setting_screenState extends State<SettingScreen> {
         padding: EdgeInsets.all(20),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: boxColor ?? Clr.black,
+          color: isDark ? Clr.blackBg : Clr.blueBg,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: TextStyle(color: Clr.hint, fontSize: 15),
+            Flexible(
+              child: Text(
+                title,
+                style: TextStyle(
+                    color: isDark ? Clr.blueBg : Clr.hint, fontSize: 15),
+              ),
             ),
             Visibility(
               visible: isVerify,
@@ -229,12 +569,14 @@ class _Setting_screenState extends State<SettingScreen> {
                     isOn = false;
                     SettingApiController().notification(notify.toList());
                     setState(() {});
+                    callback.call();
                   } else {
                     isOn = true;
                     notify.add(
                         verifyModel[index].text.split(" ").first.toLowerCase());
                     SettingApiController().notification(notify);
                     setState(() {});
+                    callback.call();
                   }
                 },
                 child: Container(
@@ -283,7 +625,7 @@ class _Setting_screenState extends State<SettingScreen> {
                 '${element} is ${mediumData[element]['Verified'] ? 'Verified' : 'Not Verified'}'));
           });
 
-          getUserModel.data?.allowed_mediums?.forEach((element) {
+          getUserModel?.data?.allowed_mediums?.forEach((element) {
             notify.add(element.toString().toLowerCase());
           });
 

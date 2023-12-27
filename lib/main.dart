@@ -7,6 +7,10 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:notiboy/screen/home/SplashScreen.dart';
 import 'package:notiboy/screen/home/bottom_bar_screen.dart';
+import 'package:notiboy/screen/home/setting/setting_screen.dart';
+import 'package:notiboy/service/notifier.dart';
+import 'package:oktoast/oktoast.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constant.dart';
@@ -23,7 +27,6 @@ SharedPreferences? pref;
 // }
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  print('fkwemofo');
   BottomNavigationBar navigationBar =
       bottomWidgetKey.currentWidget as BottomNavigationBar;
   navigationBar.onTap!(0);
@@ -49,7 +52,14 @@ void main() async {
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     ScreenBreakpoints(desktop: 800, tablet: 550, watch: 200),
   );
-  runApp(MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MyChangeNotifier()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -62,13 +72,15 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      theme: ThemeData(fontFamily: 'sf'),
-      home: SplashScreen(),
-      // home: BottomBarScreen(),
-      // theme: ThemeClass.lightTheme,
-      builder: EasyLoading.init(),
+    return OKToast(
+      child: MaterialApp(
+          navigatorKey: navigatorKey,
+          theme: ThemeData(fontFamily: 'sf'),
+          home: SplashScreen(),
+          // home: BottomBarScreen(),
+          // theme: ThemeClass.lightTheme,
+          builder: EasyLoading.init(),
+      ),
     );
   }
 }

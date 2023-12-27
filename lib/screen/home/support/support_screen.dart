@@ -139,7 +139,9 @@ class _SupportScreenState extends State<SupportScreen> {
                     SizedBox(
                       width: 15,
                     ),
-                    setting(context),
+                    setting(context, () {
+                      setState(() {});
+                    }),
                   ],
                 ),
               ),
@@ -276,7 +278,9 @@ class _SupportScreenState extends State<SupportScreen> {
                   SizedBox(
                     width: 15,
                   ),
-                  setting(context),
+                  setting(context, () {
+                    setState(() {});
+                  }),
                   SizedBox(
                     width: 15,
                   ),

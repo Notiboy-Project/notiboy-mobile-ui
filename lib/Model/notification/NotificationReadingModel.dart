@@ -64,12 +64,14 @@ class NotificationData {
   NotificationData({
       String? message, 
       bool? seen, 
-      String? createdTime, 
+      bool? isVerify,
+      String? createdTime,
       String? appId, 
       String? channelName, 
       String? hash, 
       String? uuid, 
       String? kind,
+      String? logo,
       String? link,}){
     _message = message;
     _seen = seen;
@@ -80,6 +82,8 @@ class NotificationData {
     _uuid = uuid;
     _kind = kind;
     _link = link;
+    _logo = logo;
+    _isVerify = isVerify;
 }
 
   NotificationData.fromJson(dynamic json) {
@@ -92,13 +96,17 @@ class NotificationData {
     _uuid = json['uuid'];
     _kind = json['kind'];
     _link = json['link'];
+    _logo = json['logo'];
+    _isVerify = json['verified'];
   }
   String? _message;
   bool? _seen;
+  bool? _isVerify;
   String? _createdTime;
   String? _appId;
   String? _channelName;
   String? _link;
+  String? _logo;
   String? _hash;
   String? _uuid;
   String? _kind;
@@ -112,6 +120,8 @@ class NotificationData {
   String? get hash => _hash;
   String? get uuid => _uuid;
   String? get kind => _kind;
+  String? get logo => _logo;
+  bool? get isVerify => _isVerify;
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -124,6 +134,8 @@ class NotificationData {
     map['uuid'] = _uuid;
     map['kind'] = _kind;
     map['link'] = _link;
+    map['logo'] = _logo;
+    map['verified'] = _isVerify;
     return map;
   }
 

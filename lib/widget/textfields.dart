@@ -15,6 +15,7 @@ class MyTextField extends StatelessWidget {
   Widget? prefixIcon;
   Widget? suffixIcon;
   bool? fill;
+  bool isCounter;
   Color? fillColor;
   String textFieldType;
   TextStyle? hintTextStyle;
@@ -68,6 +69,7 @@ class MyTextField extends StatelessWidget {
       this.focusBorder,
       this.prefixIconConstraints,
       this.suffixIconConstraints,
+      this.isCounter = false,
       this.validator})
       : super(key: key);
 
@@ -92,6 +94,17 @@ class MyTextField extends StatelessWidget {
         maxLength: maxLength,
         validator: validator,
         decoration: InputDecoration(
+          counter: isCounter
+              ? Text(
+                  '${controller.text.length}' + '/' + '${'${maxLength ?? 5}'}',
+                  style: inputTextStyle ??
+                      TextStyle(color: Clr.white, fontSize: 15),
+                )
+              : null,
+          // style counter text
+          counterStyle: isCounter
+              ? inputTextStyle ?? TextStyle(color: Clr.white, fontSize: 15)
+              : null,
           isCollapsed: isCollapsed ?? false,
           errorText: error,
           fillColor: fillColor,
@@ -134,31 +147,9 @@ class MyTextField extends StatelessWidget {
     switch (textFieldType) {
       case "name":
         return [
-          LengthLimitingTextInputFormatter(150),
+          LengthLimitingTextInputFormatter(maxLength??150),
           NoLeadingSpaceFormatter(),
-          FilteringTextInputFormatter.allow(RegExp("[a-z A-Z á-ú Á-Ú 0-9 .,-]")),
         ];
-      // case Validate.emailTxt:
-      //   return [
-      //     NoLeadingSpaceFormatter(),
-      //     LowerCaseTextFormatter(),
-      //     FilteringTextInputFormatter.deny(RegExp("[ ]")),
-      //     FilteringTextInputFormatter.allow(RegExp("[a-zá-ú0-9.,-_@]")),
-      //     LengthLimitingTextInputFormatter(50),
-      //   ];
-      // case Validate.passTxt:
-      //   return [
-      //     LengthLimitingTextInputFormatter(20),
-      //     FilteringTextInputFormatter.deny(RegExp('[ ]')),
-      //     FilteringTextInputFormatter.allow(
-      //         RegExp("[a-zA-Zá-úÁ-Ú0-9-@\$%&#*]")),
-      //   ];
-      //
-      // case Validate.numberTxt:
-      //   return [
-      //     NoLeadingSpaceFormatter(),
-      //     FilteringTextInputFormatter.allow(RegExp("[0-9]")),
-      //   ];
       default:
         return [
           NoLeadingSpaceFormatter(),
@@ -191,14 +182,18 @@ class NoLeadingSpaceFormatter extends TextInputFormatter {
 
 class LowerCaseTextFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    return TextEditingValue(text: newValue.text.toLowerCase(), selection: newValue.selection);
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+        text: newValue.text.toLowerCase(), selection: newValue.selection);
   }
 }
 
 class UpperCaseTextFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    return TextEditingValue(text: newValue.text.toUpperCase(), selection: newValue.selection);
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+        text: newValue.text.toUpperCase(), selection: newValue.selection);
   }
 }

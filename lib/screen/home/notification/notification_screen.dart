@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -23,6 +24,7 @@ import 'package:notiboy/widget/loader.dart';
 import 'package:notiboy/widget/textfields.dart';
 import 'package:notiboy/widget/toast.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:super_tooltip/super_tooltip.dart';
 
 import '../../../Model/notification/optin_channels.dart';
 import '../channel/controllers/api_controller.dart';
@@ -145,105 +147,105 @@ class _NotificationScreenState extends State<NotificationScreen>
                     SizedBox(
                       width: 15,
                     ),
-                    setting(context),
+                    setting(context, () {
+                      wait();
+                    }),
                   ],
                 ),
               ),
             ),
-            noNotification
-                ? Padding(
+            Expanded(
+              flex: 9,
+              child: RefreshIndicator(
+                onRefresh: () {
+                  return getOptinChannels();
+                },
+                child: SingleChildScrollView(
+                  controller: notificationScrollController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        cmnDropDown(title: Str.notification),
                         SizedBox(
-                          height: 100,
+                          height: 10,
                         ),
-                        Image.asset("assets/no_notification.png"),
-                        Padding(
-                          padding: EdgeInsets.only(top: 20, bottom: 30),
-                          child: Text(
-                            Str.noNotification,
-                            style: TextStyle(
-                              color: isDark ? Clr.white : Clr.black,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              flex: 12,
+                              child: MyTextField(
+                                padding: EdgeInsets.zero,
+                                controller: searchC,
+                                hintText: Str.searchHint,
+                                validate: "name",
+                                keyboardType: TextInputType.text,
+                                textFieldType: "name",
+                                inputTextStyle: TextStyle(
+                                    color: isDark ? Clr.white : Clr.black),
+                                fillColor: isDark ? Clr.black : Clr.white,
+                                prefixIcon: Image.asset("assets/search.png"),
+                                onChanged: (value) {
+                                  if (value.isNotEmpty) {
+                                    isFiltered = true;
+                                    currentFilteredList = notificationData
+                                            ?.where((x) =>
+                                                x.message
+                                                    ?.toLowerCase()
+                                                    .contains(
+                                                        value.toLowerCase()) ??
+                                                false)
+                                            .toList() ??
+                                        [];
+                                  } else {
+                                    isFiltered = false;
+                                  }
+                                  setState(() {});
+                                },
+                              ),
                             ),
-                          ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            // Expanded(
+                            //   flex: 2,
+                            //   child:
+                            //       selectImage(image: "assets/filter.png"),
+                            // ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                : Expanded(
-                    flex: 9,
-                    child: RefreshIndicator(
-                      onRefresh: () {
-                        return getOptinChannels();
-                      },
-                      child: SingleChildScrollView(
-                        controller: notificationScrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              cmnDropDown(title: Str.notification),
-                              SizedBox(
-                                height: 10,
-                              ),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    flex: 12,
-                                    child: MyTextField(
-                                      padding: EdgeInsets.zero,
-                                      controller: searchC,
-                                      hintText: Str.searchHint,
-                                      validate: "name",
-                                      keyboardType: TextInputType.text,
-                                      textFieldType: "name",
-                                      inputTextStyle: TextStyle(
-                                          color:
-                                              isDark ? Clr.white : Clr.black),
-                                      fillColor: isDark ? Clr.black : Clr.white,
-                                      prefixIcon:
-                                          Image.asset("assets/search.png"),
-                                      onChanged: (value) {
-                                        if (value.isNotEmpty) {
-                                          isFiltered = true;
-                                          currentFilteredList = notificationData
-                                                  ?.where((x) =>
-                                                      x.message
-                                                          ?.toLowerCase()
-                                                          .contains(value
-                                                              .toLowerCase()) ??
-                                                      false)
-                                                  .toList() ??
-                                              [];
-                                        } else {
-                                          isFiltered = false;
-                                        }
-                                        setState(() {});
-                                      },
+                        SizedBox(
+                          height: 10,
+                        ),
+                        (isFiltered
+                                ? currentFilteredList.isEmpty
+                                : notificationData?.isEmpty ?? true)
+                            ? Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset("assets/no_notification.png"),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(top: 20, bottom: 30),
+                                      child: Text(
+                                        Str.noNotification,
+                                        style: TextStyle(
+                                          color: isDark ? Clr.white : Clr.black,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    width: 10,
-                                  ),
-                                  // Expanded(
-                                  //   flex: 2,
-                                  //   child:
-                                  //       selectImage(image: "assets/filter.png"),
-                                  // ),
-                                ],
-                              ),
-                              SizedBox(
-                                height: 10,
-                              ),
-                              ListView.builder(
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
                                 primary: false,
                                 shrinkWrap: true,
                                 itemCount: isFiltered
@@ -261,13 +263,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                                     }
                                   }
                                   return notificationText(
-                                    logo: optinChannels?.data
-                                            ?.where((element) =>
-                                                element.appId ==
-                                                notificationData?[index].appId)
-                                            .first
-                                            .logo ??
-                                        '',
+                                    logo: isFiltered
+                                        ? currentFilteredList[index].logo ?? ''
+                                        : notificationData?[index].logo ?? '',
                                     message: isFiltered
                                         ? currentFilteredList[index].message ??
                                             ''
@@ -292,26 +290,16 @@ class _NotificationScreenState extends State<NotificationScreen>
                                                 ''))
                                         .capitalize(),
                                     seenImage: "assets/read_notification.png",
-                                    isVerify: optinChannels?.data
-                                            ?.where((element) =>
-                                                element.appId ==
-                                                (isFiltered
-                                                    ? currentFilteredList[index]
-                                                            .appId ??
-                                                        ''
-                                                    : notificationData?[index]
-                                                        .appId))
-                                            .first
-                                            .verified ??
-                                        false,
-                                    seenColor: (isFiltered
-                                            ? (currentFilteredList[index]
-                                                    .seen ??
-                                                false)
-                                            : (notificationData?[index].seen ??
-                                                false))
-                                        ? null
-                                        : Clr.grey,
+                                    isVerify: isFiltered
+                                        ? currentFilteredList[index].isVerify ??
+                                            false
+                                        : notificationData?[index].isVerify ??
+                                            false,
+                                    isSeen: (isFiltered
+                                        ? (currentFilteredList[index].seen ??
+                                            false)
+                                        : (notificationData?[index].seen ??
+                                            false)),
                                     boxColor: isDark ? Clr.black : Clr.white,
                                     logoColor: isDark ? Clr.white : Clr.blueBg,
                                     titleColor: isDark ? Clr.white : Clr.black,
@@ -326,12 +314,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                                   );
                                 },
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -356,8 +344,9 @@ class _NotificationScreenState extends State<NotificationScreen>
     required Color textColor,
     required Color titleColor,
     required Color logoColor,
-    required Color? seenColor,
+    required bool? isSeen,
   }) {
+    final _controller = SuperTooltipController();
     return Padding(
       padding: EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -393,13 +382,51 @@ class _NotificationScreenState extends State<NotificationScreen>
                           width: 10,
                         ),
                         Flexible(
-                          child: Text(
-                            cmpName,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: titleColor,
-                              fontSize: 17,
-                              fontWeight: FontWeight.normal,
+                          child: GestureDetector(
+                            onTap: () async {
+                              if (_controller.isVisible) {
+                                _controller.hideTooltip();
+                                return;
+                              }
+                              await _controller.showTooltip();
+                            },
+                            child: SuperTooltip(
+                              showBarrier: true,
+                              controller: _controller,
+                              popupDirection: TooltipDirection.down,
+                              backgroundColor: Color(0xff2f2d2f),
+                              left: 30,
+                              right: 30,
+                              arrowTipDistance: 10.0,
+                              arrowBaseWidth: 20.0,
+                              arrowLength: 10.0,
+                              constraints: const BoxConstraints(
+                                minHeight: 0.0,
+                                maxHeight: 100,
+                                minWidth: 0.0,
+                                maxWidth: 100,
+                              ),
+                              showCloseButton: ShowCloseButton.none,
+                              touchThroughAreaShape: ClipAreaShape.rectangle,
+                              touchThroughAreaCornerRadius: 30,
+                              barrierColor: Color.fromARGB(26, 47, 45, 47),
+                              content: Text(
+                                cmpName,
+                                softWrap: true,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                              child: Text(
+                                cmpName,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: titleColor,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -420,7 +447,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     alignment: Alignment.centerRight,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(title,
                             overflow: TextOverflow.ellipsis, style: hintTS),
@@ -433,7 +460,18 @@ class _NotificationScreenState extends State<NotificationScreen>
                             Icons.link,
                             color: isDark ? Clr.white : Clr.black,
                           ),
-                        )
+                        ),
+                        Visibility(
+                          visible: !(isSeen ?? false),
+                          child: Container(
+                            margin: EdgeInsets.only(left: 5),
+                            child: Icon(
+                              Icons.circle,
+                              size: 15,
+                              color: Clr.blue,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

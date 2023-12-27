@@ -222,7 +222,13 @@ class _ChannelScreenState extends State<ChannelScreen> {
                     SizedBox(
                       width: 15,
                     ),
-                    setting(context),
+                    setting(context, () {
+                      if (isVerifiedChannel) {
+                        getChannels(isFromDropDown: true);
+                      } else {
+                        getAllUnverifiedChannels();
+                      }
+                    }),
                   ],
                 ),
               ),
@@ -318,87 +324,129 @@ class _ChannelScreenState extends State<ChannelScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: isFiltered
-                              ? currentFilteredList.length
-                              : channelList?.length ?? 0,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            if (!isFiltered) if ((channelListModel
-                                        ?.pagination_meta_data?.next ??
-                                    '')
-                                .isNotEmpty) {
-                              if (index == (channelList?.length ?? 0) - 6) {
-                                getChannelsPagination();
-                              }
-                            }
-                            if (channelType == 1) {
-                              if (!((getUserModel.data?.channels ?? [])
-                                  .contains(isFiltered
-                                      ? currentFilteredList[index].app_id ?? ''
-                                      : channelList?[index].app_id ?? ''))) {
-                                return Container();
-                              }
-                            }
-                            if (channelType == 2) {
-                              if (!((getUserModel.data?.optins ?? []).contains(
-                                  isFiltered
-                                      ? currentFilteredList[index].app_id ?? ''
-                                      : channelList?[index].app_id ?? ''))) {
-                                return Container();
-                              }
-                            }
-                            return joinChannel(
-                              logo: isFiltered
-                                  ? currentFilteredList[index].logo ?? ''
-                                  : channelList?[index].logo ?? '',
-                              message: isFiltered
-                                  ? currentFilteredList[index].description ?? ''
-                                  : channelList?[index].description ?? '',
-                              cmpName: isFiltered
-                                  ? currentFilteredList[index].name ?? ''
-                                  : channelList?[index].name ?? '',
-                              isVerify: isFiltered
-                                  ? currentFilteredList[index].verified ?? false
-                                  : channelList?[index].verified ?? false,
-                              btnTitle: (getUserModel.data?.optins ?? [])
-                                      .contains(isFiltered
-                                          ? currentFilteredList[index].app_id ??
-                                              ''
-                                          : channelList?[index].app_id ?? '')
-                                  ? 'Opt-out'
-                                  : "Opt-in",
-                              btnColor: (getUserModel.data?.optins ?? [])
-                                      .contains(isFiltered
-                                          ? currentFilteredList[index].app_id ??
-                                              ''
-                                          : channelList?[index].app_id ?? '')
-                                  ? Clr.joinBtnCLr
-                                  : Clr.mode,
-                              onTap: () {
-                                if ((getUserModel.data?.optins ?? []).contains(
-                                    isFiltered
-                                        ? currentFilteredList[index].app_id ??
+                        (isFiltered
+                                    ? currentFilteredList.length
+                                    : channelList?.length ?? 0) ==
+                                0
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding:
+                                        EdgeInsets.only(top: 30, bottom: 30),
+                                    child: Text(
+                                      'No Channels are Verified at the Moment',
+                                      style: TextStyle(
+                                        color: isDark ? Clr.white : Clr.black,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: isFiltered
+                                    ? currentFilteredList.length
+                                    : channelList?.length ?? 0,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemBuilder: (context, index) {
+                                  if (!isFiltered) if ((channelListModel
+                                              ?.pagination_meta_data?.next ??
+                                          '')
+                                      .isNotEmpty) {
+                                    if (index ==
+                                        (channelList?.length ?? 0) - 6) {
+                                      getChannelsPagination();
+                                    }
+                                  }
+                                  if (channelType == 1) {
+                                    if (!((getUserModel?.data?.channels ?? [])
+                                        .contains(isFiltered
+                                            ? currentFilteredList[index]
+                                                    .app_id ??
+                                                ''
+                                            : channelList?[index].app_id ??
+                                                ''))) {
+                                      return Container();
+                                    }
+                                  }
+                                  if (channelType == 2) {
+                                    if (!((getUserModel?.data?.optins ?? [])
+                                        .contains(isFiltered
+                                            ? currentFilteredList[index]
+                                                    .app_id ??
+                                                ''
+                                            : channelList?[index].app_id ??
+                                                ''))) {
+                                      return Container();
+                                    }
+                                  }
+                                  return joinChannel(
+                                    logo: isFiltered
+                                        ? currentFilteredList[index].logo ?? ''
+                                        : channelList?[index].logo ?? '',
+                                    message: isFiltered
+                                        ? currentFilteredList[index]
+                                                .description ??
                                             ''
-                                        : channelList?[index].app_id ?? '')) {
-                                  optoutChannel(isFiltered
-                                      ? currentFilteredList[index].app_id ?? ''
-                                      : channelList?[index].app_id ?? '');
-                                  return;
-                                } else {
-                                  optinChannels(isFiltered
-                                      ? currentFilteredList[index].app_id ?? ''
-                                      : channelList?[index].app_id ?? '');
-                                  return;
-                                }
-                              },
-                              textColor: isDark ? Clr.white : Clr.black,
-                              logoColor: isDark ? Clr.white : Clr.blueBg,
-                              boxColor: isDark ? Clr.black : Clr.white,
-                            );
-                          },
-                        ),
+                                        : channelList?[index].description ?? '',
+                                    cmpName: isFiltered
+                                        ? currentFilteredList[index].name ?? ''
+                                        : channelList?[index].name ?? '',
+                                    isVerify: isFiltered
+                                        ? currentFilteredList[index].verified ??
+                                            false
+                                        : channelList?[index].verified ?? false,
+                                    btnTitle: (getUserModel?.data?.optins ?? [])
+                                            .contains(isFiltered
+                                                ? currentFilteredList[index]
+                                                        .app_id ??
+                                                    ''
+                                                : channelList?[index].app_id ??
+                                                    '')
+                                        ? 'Opt-out'
+                                        : "Opt-in",
+                                    btnColor: (getUserModel?.data?.optins ?? [])
+                                            .contains(isFiltered
+                                                ? currentFilteredList[index]
+                                                        .app_id ??
+                                                    ''
+                                                : channelList?[index].app_id ??
+                                                    '')
+                                        ? Clr.joinBtnCLr
+                                        : Clr.mode,
+                                    onTap: () {
+                                      if ((getUserModel?.data?.optins ?? [])
+                                          .contains(isFiltered
+                                              ? currentFilteredList[index]
+                                                      .app_id ??
+                                                  ''
+                                              : channelList?[index].app_id ??
+                                                  '')) {
+                                        optoutChannel(isFiltered
+                                            ? currentFilteredList[index]
+                                                    .app_id ??
+                                                ''
+                                            : channelList?[index].app_id ?? '');
+                                        return;
+                                      } else {
+                                        optinChannels(isFiltered
+                                            ? currentFilteredList[index]
+                                                    .app_id ??
+                                                ''
+                                            : channelList?[index].app_id ?? '');
+                                        return;
+                                      }
+                                    },
+                                    textColor: isDark ? Clr.white : Clr.black,
+                                    logoColor: isDark ? Clr.white : Clr.blueBg,
+                                    boxColor: isDark ? Clr.black : Clr.white,
+                                  );
+                                },
+                              ),
                       ],
                     ),
                   ),

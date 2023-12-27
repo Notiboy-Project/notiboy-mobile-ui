@@ -3,7 +3,7 @@ class Str {
   static const String selectNetwork = "Select a Network";
   static const String connectWallet = "Connect Your \nWallet";
   static const String firstStep = "Connect wallet on your Notiboy web app.";
-  static const String secondStep = "Click on address drop-down.";
+  static const String secondStep = "Click on address drop-down in web app.";
   static const String thirdStep = "Click 'Scan QR for Mobile Login'.";
   static const String fourthStep = "Scan QR code with your phone.";
   static const String web3Communication = "Effective Communication on Web3";

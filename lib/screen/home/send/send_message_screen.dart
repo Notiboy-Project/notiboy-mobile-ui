@@ -125,7 +125,11 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
                     SizedBox(
                       width: 15,
                     ),
-                    setting(context),
+                    setting(context,(){
+                      setState(() {
+
+                      });
+                    }),
                   ],
                 ),
               ),
@@ -205,7 +209,10 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
                         inputTextStyle: TextStyle(
                           color: isDark ? Clr.white : Clr.black,
                         ),
-                        maxLength: 240,
+                        maxLength: getUserModel
+                                ?.data?.privileges?.notificationCharCount ??
+                            5,
+                        isCounter: true,
                         maxLines: 10,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),

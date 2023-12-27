@@ -8,6 +8,9 @@ import 'package:notiboy/main.dart';
 import 'package:notiboy/screen/home/setting/setting_screen.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/widget/drop_down.dart';
+import 'package:provider/provider.dart';
+
+import '../service/notifier.dart';
 
 Widget networkCnt(
     {required String title,
@@ -93,16 +96,21 @@ Widget changeMode(Function? functionCall) {
   );
 }
 
-Widget setting(BuildContext context) {
+Widget setting(BuildContext context, Function callback) {
   return InkWell(
     highlightColor: Clr.trans,
     splashColor: Clr.trans,
     onTap: () async {
-      await Navigator.push(context, MaterialPageRoute(
+      bool? networkChange = await Navigator.push(context, MaterialPageRoute(
         builder: (context) {
           return SettingScreen();
         },
       ));
+      if (networkChange != null) {
+        if (networkChange) {
+          callback.call();
+        }
+      }
     },
     child: Container(
       padding: EdgeInsets.all(10),
@@ -210,10 +218,14 @@ Widget cmnDropDown({
                 ),
               ),
             )
-          : Expanded(child: dropdown,flex: 4),
+          : Expanded(child: dropdown, flex: 4),
       Expanded(
         flex: 3,
-        child: DropDownWidgetScreen(title: XUSERADDRESS),
+        child: DropDownWidgetScreen(
+            title: Provider.of<MyChangeNotifier>(
+                    navigatorKey!.currentState!.context,
+                    listen: true)
+                .XUSERADDRESS),
       ),
     ],
   );

@@ -55,6 +55,7 @@ class UserData {
     List<String>? allowed_mediums,
     String? chain,
     String? address,
+    Privileges? privileges,
   }) {
     _mediumMetadata = mediumMetadata;
     _status = status;
@@ -63,21 +64,29 @@ class UserData {
     _address = address;
     _optins = optins;
     _allowed_mediums = allowed_mediums;
+    _privileges = privileges;
   }
 
   UserData.fromJson(dynamic json) {
     _mediumMetadata = json['medium_metadata'] != null
         ? MediumMetadata.fromJson(json['medium_metadata'])
         : null;
+
+    _privileges = json['privileges'] != null
+        ? Privileges.fromJson(json['privileges'])
+        : null;
     _status = json['status'];
     _channels = json['channels'] != null ? json['channels'].cast<String>() : [];
     _optins = json['optins'] != null ? json['optins'].cast<String>() : [];
-    _allowed_mediums = json['allowed_mediums'] != null ? json['allowed_mediums'].cast<String>() : [];
+    _allowed_mediums = json['allowed_mediums'] != null
+        ? json['allowed_mediums'].cast<String>()
+        : [];
     _chain = json['chain'];
     _address = json['address'];
   }
 
   MediumMetadata? _mediumMetadata;
+  Privileges? _privileges;
   String? _status;
   List<String>? _channels;
   List<String>? _optins;
@@ -87,9 +96,12 @@ class UserData {
 
   MediumMetadata? get mediumMetadata => _mediumMetadata;
 
+  Privileges? get privileges => _privileges;
+
   String? get status => _status;
 
   List<String>? get channels => _channels;
+
   List<String>? get allowed_mediums => _allowed_mediums;
 
   List<String>? get optins => _optins;
@@ -102,6 +114,9 @@ class UserData {
     final map = <String, dynamic>{};
     if (_mediumMetadata != null) {
       map['medium_metadata'] = _mediumMetadata?.toJson();
+    }
+    if (_privileges != null) {
+      map['privileges'] = _privileges?.toJson();
     }
     map['status'] = _status;
     map['channels'] = _channels;
@@ -217,6 +232,28 @@ class Email {
     final map = <String, dynamic>{};
     map['ID'] = _id;
     map['Verified'] = _verified;
+    return map;
+  }
+}
+
+class Privileges {
+  Privileges({
+    int? notificationCharCount,
+  }) {
+    _notificationCharCount = notificationCharCount;
+  }
+
+  Privileges.fromJson(dynamic json) {
+    _notificationCharCount = json['notification_char_count'];
+  }
+
+  int? _notificationCharCount;
+
+  int? get notificationCharCount => _notificationCharCount;
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    map['notification_char_count'] = _notificationCharCount;
     return map;
   }
 }

@@ -63,7 +63,6 @@ class _BottomBarScreenState extends State<BottomBarScreen> {
     await getTheme();
     await getUser();
     FirebaseMessaging.instance.getToken().then((token) {
-      print(token);
       ChannelApiController().storeFCM(token ?? '');
     }).catchError((onError) {});
   }
