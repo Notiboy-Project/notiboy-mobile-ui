@@ -2,20 +2,20 @@ import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:notiboy/screen/home/channel/channel_screen.dart';
+import 'package:notiboy/screen/home/chat/chat_list.dart';
 import 'package:notiboy/screen/home/notification/notification_screen.dart';
 import 'package:notiboy/screen/home/send/send_message_screen.dart';
-import 'package:notiboy/screen/home/statistic/statistic_screen.dart';
 import 'package:notiboy/screen/home/support/support_screen.dart';
 import 'package:notiboy/utils/color.dart';
-import 'package:notiboy/utils/shared_prefrences.dart';
+import 'package:provider/provider.dart';
 
 import '../../Model/user/get_user_model.dart';
 import '../../constant.dart';
 import '../../main.dart';
 import '../../service/internet_service.dart';
+import '../../service/notifier.dart';
 import 'channel/controllers/api_controller.dart';
 
 int selectedIndex = 0;
@@ -33,14 +33,15 @@ class BottomBarScreen extends StatefulWidget {
 
 class _BottomBarScreenState extends State<BottomBarScreen> {
   void _onItemTapped(int index) {
+    
     if (selectedIndex == index) {
-      if (selectedIndex == 0)
+      if (selectedIndex == 1)
         notificationScrollController.animateTo(
           notificationScrollController.position.minScrollExtent,
           curve: Curves.easeOut,
           duration: const Duration(milliseconds: 500),
         );
-      if (selectedIndex == 1)
+      if (selectedIndex == 2)
         channelScrollController.animateTo(
           channelScrollController.position.minScrollExtent,
           curve: Curves.easeOut,
@@ -82,6 +83,11 @@ class _BottomBarScreenState extends State<BottomBarScreen> {
               setState(() {});
             },
           ),
+          ChatListScreen(
+            functionCall: () {
+              setState(() {});
+            },
+          ),
           ChannelScreen(
             functionCall: () {
               setState(() {});
@@ -112,25 +118,32 @@ class _BottomBarScreenState extends State<BottomBarScreen> {
             ),
           ),
           BottomNavigationBarItem(
+              label: "",
+              icon: Icon(
+                Icons.chat_bubble_outline_sharp,
+                size: 30,
+                color: selectedIndex == 1 ? Clr.blue : Clr.grey,
+              )),
+          BottomNavigationBarItem(
             label: "",
             icon: Image.asset(
               "assets/channel_1.png",
               width: 30,
-              color: selectedIndex == 1 ? Clr.blue : Clr.grey,
-            ),
-          ),
-          BottomNavigationBarItem(
-            label: "",
-            icon: Image.asset(
-              "assets/home_bottom.png",
               color: selectedIndex == 2 ? Clr.blue : Clr.grey,
             ),
           ),
           BottomNavigationBarItem(
             label: "",
             icon: Image.asset(
-              "assets/message_question.png",
+              "assets/home_bottom.png",
               color: selectedIndex == 3 ? Clr.blue : Clr.grey,
+            ),
+          ),
+          BottomNavigationBarItem(
+            label: "",
+            icon: Image.asset(
+              "assets/message_question.png",
+              color: selectedIndex == 4 ? Clr.blue : Clr.grey,
             ),
           ),
         ],

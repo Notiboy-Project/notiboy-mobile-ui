@@ -14,6 +14,7 @@ import 'package:notiboy/main.dart';
 import 'package:notiboy/screen/home/bottom_bar_screen.dart';
 import 'package:notiboy/screen/home/channel/channel_screen.dart';
 import 'package:notiboy/screen/home/notification/controllers/api_controller.dart';
+import 'package:notiboy/screen/home/send/send_message_screen.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/string.dart';
@@ -28,6 +29,7 @@ import 'package:super_tooltip/super_tooltip.dart';
 
 import '../../../Model/notification/optin_channels.dart';
 import '../channel/controllers/api_controller.dart';
+import '../chat/messages_screens.dart';
 
 List<NotificationData>? notificationData;
 
@@ -90,6 +92,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   getTheme() async {
     isDark = await pref?.getBool("mode") ?? false;
+    if(mounted)
     setState(() {});
   }
 

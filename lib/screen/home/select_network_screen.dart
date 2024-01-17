@@ -36,7 +36,6 @@ class _SelectNetworkScreenState extends State<SelectNetworkScreen> {
     var brightness =
         SchedulerBinding.instance.platformDispatcher.platformBrightness;
     mode = brightness == Brightness.dark;
-    print("---${mode}");
     wait();
     super.initState();
   }

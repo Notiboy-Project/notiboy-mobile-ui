@@ -30,18 +30,17 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
   List<MenuItem> firstItems = [home];
   List<MenuItem> secondItems = [logout];
 
-  static MenuItem home = MenuItem(text:  Provider.of<MyChangeNotifier>(
-      navigatorKey!
-          .currentState!
-          .context,
-      listen: false)
-      .XUSERADDRESS , image: "assets/copy.png");
+  static MenuItem home = MenuItem(
+      text: Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+              listen: false)
+          .XUSERADDRESS,
+      image: "assets/copy.png");
   static MenuItem logout =
       MenuItem(text: 'Log Out', image: "assets/logout.png");
 
   @override
   Widget build(BuildContext context) {
-    firstItems = [MenuItem(text:  widget.title, image: "assets/copy.png")];
+    firstItems = [MenuItem(text: widget.title, image: "assets/copy.png")];
     return DropdownButtonHideUnderline(
       child: DropdownButton2(
         customButton: dpDown(title: widget.title),
@@ -110,9 +109,9 @@ class _DropDownWidgetScreenState extends State<DropDownWidgetScreen> {
   }
 
   onChanged(BuildContext context, MenuItem item) {
-    if (item == home) {
+    if (item.text == home.text) {
       Clipboard.setData(
-        ClipboardData(text: home.text),
+        ClipboardData(text: item.text),
       );
     } else if (item == logout) {
       EasyLoading.show(status: 'loading...');

@@ -12,6 +12,7 @@ class Str {
   static const String privacy = "privacy policy";
   static const String noNotification = "No Notifications Yet!";
   static const String searchHint = "Search here anything...";
+  static const String searchAddress = "Search address";
   static const String findHint = "Find your answer...";
   static const String notification = "Notifications";
   static const String channel = "Channels";

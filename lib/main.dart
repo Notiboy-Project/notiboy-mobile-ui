@@ -7,6 +7,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:notiboy/screen/home/SplashScreen.dart';
 import 'package:notiboy/screen/home/bottom_bar_screen.dart';
+import 'package:notiboy/screen/home/chat/controller/chat_service.dart';
 import 'package:notiboy/screen/home/setting/setting_screen.dart';
 import 'package:notiboy/service/notifier.dart';
 import 'package:oktoast/oktoast.dart';
@@ -27,6 +28,7 @@ SharedPreferences? pref;
 // }
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
+
   BottomNavigationBar navigationBar =
       bottomWidgetKey.currentWidget as BottomNavigationBar;
   navigationBar.onTap!(0);
@@ -56,6 +58,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MyChangeNotifier()),
+        ChangeNotifierProvider(create: (_) => MyChatNotifier()),
       ],
       child: const MyApp(),
     ),
@@ -76,8 +79,8 @@ class _MyAppState extends State<MyApp> {
       child: MaterialApp(
           navigatorKey: navigatorKey,
           theme: ThemeData(fontFamily: 'sf'),
-          home: SplashScreen(),
-          // home: BottomBarScreen(),
+          // home: SplashScreen(),
+          home: BottomBarScreen(),
           // theme: ThemeClass.lightTheme,
           builder: EasyLoading.init(),
       ),
