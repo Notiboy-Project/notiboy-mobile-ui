@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -51,8 +52,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         .getChatList();
 
     super.initState();
-    ChatApiController().checkInternet();
-    ChatApiController().connectSocket().then((value) {
+    ChatApiController.instance.checkInternet();
+    ChatApiController.instance.connectSocket().then((value) {
       Provider.of<MyChangeNotifier>(context, listen: false)
           .socket
           ?.messages
@@ -474,44 +475,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
+            backgroundColor: isDark
+                ? kIsWeb
+                    ? Clr.black
+                    : Clr.dark
+                : kIsWeb
+                    ? Clr.white
+                    : Clr.blueBg,
             content: Text(
-                'You are blocked from ${(jsonDecode(message) as Map)['user_a']}'),
-            title: Text('Something went wrong'),
+              'You have been blocked',
+              style: TextStyle(color: isDark ? Clr.white : Clr.black),
+            ),
           );
         },
       );
     }
 
-    Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
-            listen: false)
-        .messagesList
-        .forEach((key, value) {
-      for (int i = 0;
-          i <
-              (Provider.of<MyChangeNotifier>(
-                              navigatorKey!.currentState!.context,
-                              listen: false)
-                          .messagesList[key]
-                          ?.where((element) =>
-                              element.status == MessageStatus.submitted)
-                          .toList() ??
-                      [])
-                  .length;
-          i++) {
-        if ((Provider.of<MyChangeNotifier>(context, listen: false)
-                    .messagesList[key]?[i]
-                    .status ==
-                MessageStatus.submitted) ||
-            (Provider.of<MyChangeNotifier>(context, listen: false)
-                    .messagesList[key]?[i]
-                    .status ==
-                MessageStatus.delivered)) {
-          Provider.of<MyChangeNotifier>(context, listen: false)
-              .messagesList[key]?[i]
-              .setStatus = MessageStatus.delivered;
-        }
-      }
-    });
     if (((jsonDecode(message) as Map)['status'] == 'submitted') ||
         (jsonDecode(message) as Map)['status'] == 'delivered') {
       if (Provider.of<MyChangeNotifier>(context, listen: false)
@@ -521,6 +500,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 .currentUserAddress]
             ?.first
             .setid = (jsonDecode(message) as Map)['uuid'];
+
+      Provider.of<MyChangeNotifier>(context, listen: false)
+          .messagesList[Provider.of<MyChangeNotifier>(context, listen: false)
+              .currentUserAddress]
+          ?.first
+          .setStatus = getStatus((jsonDecode(message) as Map)['status']);
     }
     if ((jsonDecode(message) as Map).containsKey('sender') &&
         (jsonDecode(message) as Map)['status'] != 'ack') {

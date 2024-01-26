@@ -42,12 +42,6 @@
 @import image_picker_ios;
 #endif
 
-#if __has_include(<images_picker/ImagesPickerPlugin.h>)
-#import <images_picker/ImagesPickerPlugin.h>
-#else
-@import images_picker;
-#endif
-
 #if __has_include(<qr_code_utils_ios/QrCodeUtilsIosPlugin.h>)
 #import <qr_code_utils_ios/QrCodeUtilsIosPlugin.h>
 #else
@@ -87,7 +81,6 @@
   [SwiftFlutterBarcodeScannerPlugin registerWithRegistrar:[registry registrarForPlugin:@"SwiftFlutterBarcodeScannerPlugin"]];
   [FlutterLocalNotificationsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterLocalNotificationsPlugin"]];
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
-  [ImagesPickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"ImagesPickerPlugin"]];
   [QrCodeUtilsIosPlugin registerWithRegistrar:[registry registrarForPlugin:@"QrCodeUtilsIosPlugin"]];
   [RestartAppPlugin registerWithRegistrar:[registry registrarForPlugin:@"RestartAppPlugin"]];
   [ScanPlugin registerWithRegistrar:[registry registrarForPlugin:@"ScanPlugin"]];

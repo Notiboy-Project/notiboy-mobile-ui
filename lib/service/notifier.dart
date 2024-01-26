@@ -4,9 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:notiboy/Model/chat/Message.dart';
 import 'package:web_socket_client/web_socket_client.dart';
 import '../../../Model/chat/chatListModel.dart';
-import '../Model/chat/enumaration.dart';
 import '../screen/home/chat/controller/chat_controller.dart';
-import '../screen/home/chat/messages_screens.dart';
 
 class MyChangeNotifier extends ChangeNotifier {
   bool _isUserInMessagingScreen = false;
@@ -15,7 +13,7 @@ class MyChangeNotifier extends ChangeNotifier {
 
   WebSocket? socket;
   String _XUSERADDRESS =
-      'F43T47RRMITUVVHLR7ICKP5VA7FGX7UFQBA7DHRK6WX74DRJYGUT3P5PV4';
+      '';
   Map<String, List<Message>> _messagesList = {};
 
   List<Data> _chatList = [];
@@ -28,12 +26,11 @@ class MyChangeNotifier extends ChangeNotifier {
 
   List<Data>? get chatList => _chatList;
 
-  String _token =
-      'eyJhbGciOiJSUzI1NiIsImtpZCI6InNpZy0xNjg2MzgxNzU4In0.eyJjaGFpbiI6ImFsZ29yYW5kIiwiYWRkcmVzcyI6IkY0M1Q0N1JSTUlUVVZWSExSN0lDS1A1VkE3RkdYN1VGUUJBN0RIUks2V1g3NERSSllHVVQzUDVQVjQiLCJraW5kIjoiIiwidXVpZCI6IiIsImF1ZCI6IkY0M1Q0N1JSTUlUVVZWSExSN0lDS1A1VkE3RkdYN1VGUUJBN0RIUks2V1g3NERSSllHVVQzUDVQVjQiLCJleHAiOjE3MDU2NTY3MTQsImlhdCI6MTcwNTA1MTkxNCwiaXNzIjoibm90aWJveSIsInN1YiI6InN0YWdlIn0.Bw1_DKiTemTJInlrIajDZ9bcH47iWceLMB7JB3kmvqC3_tCYRCbJjyeFnkQH2Rburibc9zfQSaOi4IfgnQeUaEq-omSx3IVH1eCFLiC3ZtZtvsOYF9Xs-flxqZMzYiFhTm6-HLYNxEYy9aoqM1oiDvmmunjkutSxYDHv1Ps8W358jopCDNgVQnTNOAf6SS84QBBqu_I6icbmyA95G-HhaLo_eoKNodRWMR3vQt00ptJ_vMHyL1URP4kPTUBFxoObfXkYiOb7rVdXHR7IV9hWdyqvdGqgIcf2PFgE-ZlONhfI4w0lRvClDk61gxy9rzoetmUDd7mRCz8t0XB1R8wSJQ';
+  String _token = '';
 
   String get token => _token;
 
-  String _chain = 'algorand';
+  String _chain = '';
 
   String get chain => _chain;
 
@@ -97,7 +94,7 @@ class MyChangeNotifier extends ChangeNotifier {
   }
 
   getChatList() async {
-    await ChatApiController().getListOfChats().then((response) async {
+    await ChatApiController.instance.getListOfChats().then((response) async {
       ChatListModel chatListModel =
           ChatListModel.fromJson(json.decode(response.body));
       if (_chatList.isEmpty) {

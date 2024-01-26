@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,24 +10,17 @@ import 'package:notiboy/Model/notification/NotificationReadingModel.dart';
 import 'package:notiboy/constant.dart';
 import 'package:notiboy/main.dart';
 import 'package:notiboy/screen/home/bottom_bar_screen.dart';
-import 'package:notiboy/screen/home/channel/channel_screen.dart';
 import 'package:notiboy/screen/home/notification/controllers/api_controller.dart';
-import 'package:notiboy/screen/home/send/send_message_screen.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
-import 'package:notiboy/widget/dropDown2.dart';
-import 'package:notiboy/widget/drop_down.dart';
-import 'package:notiboy/widget/loader.dart';
 import 'package:notiboy/widget/textfields.dart';
-import 'package:notiboy/widget/toast.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
 import '../../../Model/notification/optin_channels.dart';
 import '../channel/controllers/api_controller.dart';
-import '../chat/messages_screens.dart';
 
 List<NotificationData>? notificationData;
 

@@ -1,20 +1,16 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:notiboy/main.dart';
-import 'package:notiboy/screen/home/SplashScreen.dart';
 import 'package:notiboy/screen/home/select_network_screen.dart';
 import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/button.dart';
-import 'package:notiboy/widget/drop_down.dart';
-import 'package:notiboy/widget/loader.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 

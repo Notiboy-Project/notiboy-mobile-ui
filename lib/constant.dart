@@ -10,8 +10,9 @@ import 'Model/user/get_user_model.dart';
 bool isDark = false;
 const version = 'v1';
 GlobalKey<NavigatorState>? navigatorKey = GlobalKey();
-const url = '${'https://testnet.notiboy.com/api/stage'}/$version';
-// const url = '${'https://app.notiboy.com/api'}/$version';
+// const domainUrl = '${'testnet.notiboy.com/api/stage'}/$version';
+const domainUrl = '${'app.notiboy.com/api'}/$version';
+const url = '${'https://$domainUrl'}';
 GetUserModel? getUserModel;
 
 var bottomWidgetKey = GlobalKey<State<BottomNavigationBar>>();
@@ -34,7 +35,7 @@ extension StringExtension on String {
   }
 }
 
-String timeAgoSinceDate(DateTime date,{bool numericDates = true}) {
+String timeAgoSinceDate(DateTime date, {bool numericDates = true}) {
   final date2 = DateTime.now().toLocal();
   final difference = date2.difference(date);
   final aDate = DateTime(date.year, date.month, date.day);
@@ -48,17 +49,16 @@ String timeAgoSinceDate(DateTime date,{bool numericDates = true}) {
     return (numericDates) ? '1 minute ago' : 'A minute ago';
   } else if (difference.inMinutes <= 60) {
     return '${difference.inMinutes} minutes ago';
-  }else if(aDate == today) {
+  } else if (aDate == today) {
     return 'today';
   }
   return DateFormat("dd/MM/yyyy").format(date.toLocal());
 }
+
 extension DateHelpers on DateTime {
   bool isToday() {
     final now = DateTime.now();
-    return now.day == day &&
-        now.month == month &&
-        now.year == year;
+    return now.day == day && now.month == month && now.year == year;
   }
 
   bool isYesterday() {
@@ -68,6 +68,7 @@ extension DateHelpers on DateTime {
         yesterday.year == year;
   }
 }
+
 String convertUserID(String XUserId) {
   String first4 = XUserId.substring(0, 5); //<-- this string will be abcde
   String last4 = XUserId.substring(

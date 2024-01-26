@@ -36,13 +36,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   responsive_builder: ^0.7.0
-  fl_chart: ^0.63.0
+  fl_chart: ^0.65.0
   dropdown_button2: ^2.0.0
   auto_size_text: ^3.0.0
   http: ^1.1.0
-  loader_overlay: ^2.0.10
   oktoast: ^3.2.0
-  connectivity_plus: ^4.0.2
+  connectivity_plus: ^5.0.2
   dio: ^5.3.3
   shared_preferences: ^2.1.2
   web3dart: ^2.6.1
@@ -52,7 +51,7 @@ dependencies:
   transparent_image: ^2.0.0
   firebase_core: ^2.15.0
   firebase_messaging: ^14.6.5
-  flutter_local_notifications: ^15.1.0+1
+  flutter_local_notifications: ^16.3.0
   intl: ^0.18.1
   qr_code_utils: ^0.0.1
   image_picker: ^1.0.2
@@ -60,7 +59,10 @@ dependencies:
   super_tooltip: ^2.0.5
   provider: ^6.0.5
   restart_app: ^1.2.1
-
+  timeago: ^3.6.0
+  web_socket_client: ^0.1.0
+  animated_list_plus: ^0.5.2
+  enhanced_paginated_view: ^1.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -91,6 +93,12 @@ flutter:
     - family: sf
       fonts:
         - asset: fonts/sf-pro-text-regular.ttf
+    - family: sf-semi-midium
+      fonts:
+        - asset: fonts/sf-pro-semibold.ttf
+    - family: midium
+      fonts:
+        - asset: fonts/sf-pro-medium.ttf
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

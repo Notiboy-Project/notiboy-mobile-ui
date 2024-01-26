@@ -17,17 +17,7 @@ class MyChatNotifier extends ChangeNotifier {
 
   DateTime? get lastAckTime => _lastAckTime;
 
-  set lastDeliveredTime(DateTime? value) {
-    _lastDeliveredTime = value;
-    notifyListeners();
-  }
-
-  set lastAckTime(DateTime? value) {
-    _lastAckTime = value;
-    notifyListeners();
-  }
-
-  checkLastMessages(userId, Function callback) async {
+  checkLastMessages(userId) async {
     if (Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
                 listen: false)
             .messagesList[userId]
@@ -68,5 +58,7 @@ class MyChatNotifier extends ChangeNotifier {
               (int.parse(ackMessages?.last.createdAt ?? '0')) * 1000)
           .toLocal();
     }
+    notifyListeners();
+
   }
 }

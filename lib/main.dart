@@ -79,8 +79,8 @@ class _MyAppState extends State<MyApp> {
       child: MaterialApp(
           navigatorKey: navigatorKey,
           theme: ThemeData(fontFamily: 'sf'),
-          // home: SplashScreen(),
-          home: BottomBarScreen(),
+          home: SplashScreen(),
+          // home: BottomBarScreen(),
           // theme: ThemeClass.lightTheme,
           builder: EasyLoading.init(),
       ),

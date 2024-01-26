@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:enhanced_paginated_view/enhanced_paginated_view.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,11 +7,11 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:intl/intl.dart';
 import 'package:notiboy/Model/chat/Message.dart';
 import 'package:notiboy/Model/chat/enumaration.dart';
-import 'package:notiboy/Model/chat/messages_list_model.dart';
 import 'package:notiboy/screen/home/chat/controller/chat_controller.dart';
 import 'package:notiboy/utils/color.dart';
 import 'package:oktoast/oktoast.dart';
 import 'package:provider/provider.dart';
+import 'package:web_socket_client/web_socket_client.dart';
 import '../../../constant.dart';
 import '../../../service/internet_service.dart';
 import '../../../service/notifier.dart';
@@ -31,7 +32,6 @@ class MessagesListScreen extends StatefulWidget {
 }
 
 class _MessagesListScreenState extends State<MessagesListScreen> {
-  MessagesListModel? _messagesListModel;
   TextEditingController _messageController = TextEditingController();
   String data = '';
   String? xUserAddress;
@@ -43,19 +43,30 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
 
   @override
   void initState() {
+
     super.initState();
     xUserAddress =
         Provider.of<MyChangeNotifier>(context, listen: false).XUSERADDRESS;
 
     chain = Provider.of<MyChangeNotifier>(context, listen: false).chain;
+
+    checkUserIsBlockedOrNot();
+    if (widget.userId !=
+        Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                listen: false)
+            .currentUserAddress) {
+      ChatApiController.instance.messagesListModel = null;
+    }
     Provider.of<MyChangeNotifier>(context, listen: false)
         .setUserInMessagingScreen = true;
     Provider.of<MyChangeNotifier>(context, listen: false)
         .setCurrentUserAddress = widget.userId;
-    checkUserIsBlockedOrNot();
-
-    getMessagesPagination();
+    getMessagesPagination(0);
   }
+
+  bool isLoading = false;
+  bool isMaxReached = false;
+  bool showError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -134,54 +145,86 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
           Expanded(
             child: Container(
               margin: EdgeInsets.symmetric(horizontal: 20),
-              child:
-                  Consumer<MyChangeNotifier>(builder: (context, data, index) {
+              child: Consumer<MyChangeNotifier>(builder: (context, data, i) {
                 var messagesList = data.messagesList;
-                return ListView.separated(
-                  separatorBuilder: (context, index) => Container(),
-                  controller:
-                      Provider.of<MyChangeNotifier>(context, listen: false)
-                          .controller,
-                  shrinkWrap: true,
-                  reverse: true,
-                  scrollDirection: Axis.vertical,
-                  addAutomaticKeepAlives: true,
-                  itemCount: messagesList[widget.userId]?.length ?? 0,
-                  itemBuilder: (context, index) {
-                    Message message = messagesList[widget.userId]![index];
-                    if (message.sendBy == xUserAddress) {
-                      return outgoingMessages(message);
-                    } else {
-                      if (message.id ==
-                          (messagesList[widget.userId]
-                              ?.where(
-                                  (element) => element.sendBy != xUserAddress)
-                              .toList()
-                              .first
-                              .id)) {
-                        if (!list.contains(message.id)) {
-                          list.add(message.id);
-                          Provider.of<MyChangeNotifier>(
-                                  navigatorKey!.currentState!.context,
-                                  listen: false)
-                              .socket
-                              ?.send(json.encode({
-                                "kind": "ack",
-                                "uuid": message.id,
-                                "receiver": message.sendBy,
-                                "chain": chain,
-                                "time": int.parse(message.createdAt ?? '0')
-                              }));
-                        }
+                return EnhancedPaginatedView<Message>(
+                    showError: showError,
+                    showLoading: isLoading,
+                    isMaxReached: isMaxReached,
+                    onLoadMore: (p0) {
+                      if ((ChatApiController.instance.messagesListModel
+                                  ?.paginationMetaData?.next ??
+                              '')
+                          .isNotEmpty) {
+                        getMessagesPagination(p0);
                       }
-                      return incomingMessages(message);
-                    }
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [],
-                    );
-                  },
-                );
+                    },
+                    itemsPerPage: 40,
+                    reverse: true,
+                    errorWidget: (page) => Center(
+                          child: Column(
+                            children: [],
+                          ),
+                        ),
+                    listOfData: messagesList[widget.userId] ?? [],
+                    builder: (physics, items, shrinkWrap, reverse) {
+                      return ListView.separated(
+                        separatorBuilder: (context, index) => Container(),
+                        controller: Provider.of<MyChangeNotifier>(context,
+                                listen: false)
+                            .controller,
+                        shrinkWrap: shrinkWrap,
+                        reverse: reverse,
+                        scrollDirection: Axis.vertical,
+                        addAutomaticKeepAlives: true,
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            // executes after build
+                            if (index == 0) {
+                              Provider.of<MyChatNotifier>(context,
+                                      listen: false)
+                                  .checkLastMessages(widget.userId);
+                            }
+                          });
+
+                          Message message = items[index];
+
+                          if (message.sendBy == xUserAddress) {
+                            return outgoingMessages(message);
+                          } else {
+                            if (message.id ==
+                                (items
+                                    .where((element) =>
+                                        element.sendBy != xUserAddress)
+                                    .toList()
+                                    .first
+                                    .id)) {
+                              if (!list.contains(message.id)) {
+                                list.add(message.id);
+                                Provider.of<MyChangeNotifier>(
+                                        navigatorKey!.currentState!.context,
+                                        listen: false)
+                                    .socket
+                                    ?.send(json.encode({
+                                      "kind": "ack",
+                                      "uuid": message.id,
+                                      "receiver": message.sendBy,
+                                      "chain": chain,
+                                      "time":
+                                          int.parse(message.createdAt ?? '0')
+                                    }));
+                              }
+                            }
+                            return incomingMessages(message);
+                          }
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [],
+                          );
+                        },
+                      );
+                    });
               }),
             ),
           ),
@@ -210,35 +253,56 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
                     overlayColor: MaterialStateProperty.all(
                       Colors.transparent,
                     ),
-                    onTap: () {
-                      if (_messageController.text.trim().isNotEmpty) {
-                        _messageController.clear();
-                        dummyId =
-                            DateTime.now().microsecondsSinceEpoch.toString();
+                    onTap: () async {
+                      checkInternets().then((internet) async {
+                        if (internet) {
+                          if (widget.userId == xUserAddress) {
+                            return;
+                          } else if (_messageController.text
+                              .trim()
+                              .isNotEmpty) {
+                            _messageController.clear();
+                            dummyId = DateTime.now()
+                                .microsecondsSinceEpoch
+                                .toString();
 
-                        Provider.of<MyChangeNotifier>(context, listen: false)
-                            .messagesListInsert(
-                          widget.userId,
-                          Message(
-                              id: dummyId,
-                              status: MessageStatus.submitted,
-                              message: data,
-                              receiver: widget.userId,
-                              createdAt:
-                                  (DateTime.timestamp().microsecondsSinceEpoch)
+                            Provider.of<MyChangeNotifier>(context,
+                                    listen: false)
+                                .messagesListInsert(
+                              widget.userId,
+                              Message(
+                                  id: dummyId,
+                                  status: MessageStatus.submitted,
+                                  message: data,
+                                  receiver: widget.userId,
+                                  createdAt: (DateTime.timestamp()
+                                          .microsecondsSinceEpoch)
                                       .toString()
                                       .substring(0, 10),
-                              sendBy: xUserAddress ?? ''),
-                        );
-                        Provider.of<MyChangeNotifier>(context, listen: false)
-                            .socket
-                            ?.send(json.encode({
-                              "kind": "chat",
-                              "receiver": widget.userId,
-                              "chain": chain,
-                              "data": data
-                            }));
-                      }
+                                  sendBy: xUserAddress ?? ''),
+                            );
+                            Provider.of<MyChangeNotifier>(context,
+                                    listen: false)
+                                .socket
+                                ?.send(json.encode({
+                                  "kind": "chat",
+                                  "receiver": widget.userId,
+                                  "chain": chain,
+                                  "data": data
+                                }));
+                          }
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: Text(
+                                    'It seems you are not connected to internet'),
+                              );
+                            },
+                          );
+                        }
+                      });
                     },
                     child: Container(
                       margin: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
@@ -340,68 +404,69 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
             ),
             Visibility(
               visible: message.timeIsVisible.value,
-              child: Row(
-                children: [
-                  Provider.of<MyChatNotifier>(context, listen: true).lastAckTime != null &&
-                          DateTime.fromMillisecondsSinceEpoch((int.parse(message.createdAt)) * 1000)
-                              .isBefore(
-                                  Provider.of<MyChatNotifier>(context, listen: true)
-                                      .lastAckTime!)
-                      ? Image.asset(
-                          "assets/read_notification.png",
-                          width: 15,
-                          color: Colors.blue,
-                        )
-                      : MessageStatus.ack != message.status &&
-                              Provider.of<MyChatNotifier>(context, listen: true)
-                                      .lastDeliveredTime !=
-                                  null &&
-                              DateTime.fromMillisecondsSinceEpoch(
-                                      (int.parse(message.createdAt)) * 1000)
-                                  .isBefore(Provider.of<MyChatNotifier>(context,
-                                          listen: true)
-                                      .lastDeliveredTime!)
-                          ? Image.asset(
-                              "assets/read_notification.png",
-                              width: 15,
-                              color: Colors.grey,
-                            )
-                          : message.status == MessageStatus.submitted
-                              ? Icon(
-                                  Icons.check_sharp,
-                                  size: 15,
-                                )
-                              : Image.asset(
-                                  "assets/read_notification.png",
-                                  width: 15,
-                                  color: message.status == MessageStatus.ack
-                                      ? Colors.blue
-                                      : Colors.grey,
-                                ),
-                  SizedBox(
-                    width: 5,
-                  ),
-                  Text(
-                    DateTime.fromMillisecondsSinceEpoch(
-                                (int.parse(message.createdAt)) * 1000)
-                            .toLocal()
-                            .isToday()
-                        ? DateFormat.Hm().format(
+              child: Consumer<MyChatNotifier>(builder: (context, data, index) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // executes after build
+                });
+                return Row(
+                  children: [
+                    data.lastAckTime != null &&
                             DateTime.fromMillisecondsSinceEpoch(
                                     (int.parse(message.createdAt)) * 1000)
-                                .toLocal())
-                        : MMMMddyyyyHH.format(
+                                .isBefore(data.lastAckTime!)
+                        ? Image.asset(
+                            "assets/read_notification.png",
+                            width: 15,
+                            color: Colors.blue,
+                          )
+                        : MessageStatus.ack != message.status &&
+                                data.lastDeliveredTime != null &&
                                 DateTime.fromMillisecondsSinceEpoch(
                                         (int.parse(message.createdAt)) * 1000)
-                                    .toLocal())
-                            .toString(),
-                    style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: isDark ? Color(0xFFAAAAAA) : Color(0xFF666666)),
-                  ),
-                ],
-              ),
+                                    .isBefore(data.lastDeliveredTime!)
+                            ? Image.asset(
+                                "assets/read_notification.png",
+                                width: 15,
+                                color: Colors.grey,
+                              )
+                            : message.status == MessageStatus.submitted
+                                ? Icon(
+                                    Icons.check_sharp,
+                                    size: 15,
+                                  )
+                                : Image.asset(
+                                    "assets/read_notification.png",
+                                    width: 15,
+                                    color: message.status == MessageStatus.ack
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                  ),
+                    SizedBox(
+                      width: 5,
+                    ),
+                    Text(
+                      DateTime.fromMillisecondsSinceEpoch(
+                                  (int.parse(message.createdAt)) * 1000)
+                              .toLocal()
+                              .isToday()
+                          ? DateFormat.Hm().format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                      (int.parse(message.createdAt)) * 1000)
+                                  .toLocal())
+                          : MMMMddyyyyHH.format(
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                          (int.parse(message.createdAt)) * 1000)
+                                      .toLocal())
+                              .toString(),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          color:
+                              isDark ? Color(0xFFAAAAAA) : Color(0xFF666666)),
+                    ),
+                  ],
+                );
+              }),
             )
           ],
         ),
@@ -505,91 +570,11 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
     );
   }
 
-  getMessagesPagination() async {
-    await ChatApiController().getMessageData(widget.userId, context, () {
-      setState(() {});
-    });
-
-/*checkInternets().then((internet) async {
-      if (internet) {
-        await ChatApiController()
-            .callPaginatedUrl(
-                _messagesListModel?.paginationMetaData?.next ?? '',
-                widget.userId)
-            .then((response) async {
-          EasyLoading.dismiss();
-          _messagesListModel =
-              MessagesListModel.fromJson(json.decode(response.body));
-          setState(() {
-            for (var element in _messagesListModel!.data!) {
-              Message message = Message(
-                  id: element.uuid ?? '',
-                  status: getStatus(element.status ?? ''),
-                  message: element.message ?? '',
-                  createdAt: element.sentTime.toString(),
-                  sendBy: element.sender ?? '',
-                  receiver: element.userB ?? '',
-                  timeIsVisible: false);
-              if (Provider.of<MyChangeNotifier>(context, listen: false)
-                  .messagesList
-                  .isEmpty) {
-                Provider.of<MyChangeNotifier>(context, listen: false)
-                    .messagesListAdd(widget.userId, message);
-              } else {
-                if (!(Provider.of<MyChangeNotifier>(context, listen: false)
-                        .messagesList[widget.userId]
-                        ?.any((element) => element.id == message.id) ??
-                    false)) {
-                  try {
-
-                    if (DateTime.fromMillisecondsSinceEpoch((int.parse(
-                                Provider.of<MyChangeNotifier>(context,
-                                            listen: false)
-                                        .messagesList[widget.userId]
-                                        ?.first
-                                        .createdAt ??
-                                    '0') *
-                            1000))
-                        .isBefore(DateTime.fromMillisecondsSinceEpoch(
-                            (int.parse(message.createdAt) * 1000)))) {
-                      Provider.of<MyChangeNotifier>(context, listen: false)
-                          .messagesListInsert(widget.userId, message);
-                    } else {
-                      Provider.of<MyChangeNotifier>(context, listen: false)
-                          .messagesListAdd(widget.userId, message);
-                    }
-                  } catch (e) {
-                    print(e);
-                  }
-                }
-              }
-            }
-          });
-        }).catchError((onError) {});
-
-        // Provider.of<MyChangeNotifier>(context, listen: false)
-        //     .controller
-        //     .jumpTo(
-        //   Provider.of<MyChangeNotifier>(context, listen: false)
-        //       .messagesList[widget.userId]
-        //       ?.indexWhere((element) {
-        //     return element.id ==
-        //         (Provider.of<MyChangeNotifier>(context, listen: false)
-        //             .messagesList[widget.userId]
-        //             ?.where((element) =>
-        //         element.status == MessageStatus.unread)
-        //             .toList()
-        //             .last
-        //             .id);
-        //   }).toDouble() ??
-        //       0.0,
-        // );
-        if ((_messagesListModel?.paginationMetaData?.next?.isNotEmpty ??
-            false)) {
-          getMessagesPagination();
-        }
-      }
-    });*/
+  getMessagesPagination(int page) async {
+    await ChatApiController.instance.getMessageData(
+      widget.userId,
+      context,
+    );
   }
 
   popupMenu() {
@@ -598,14 +583,18 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
       return InkWell(
         onTap: () {
           if (userIsBlocked) {
-            ChatApiController().unBlockUser(widget.userId).then((response) {
+            ChatApiController.instance
+                .unBlockUser(widget.userId)
+                .then((response) {
               ScaffoldMessenger.of(context).showSnackBar(new SnackBar(
                   content: Text(jsonDecode(response.body)['message'])));
 
               checkUserIsBlockedOrNot();
             });
           } else {
-            ChatApiController().blockUser(widget.userId).then((response) {
+            ChatApiController.instance
+                .blockUser(widget.userId)
+                .then((response) {
               ScaffoldMessenger.of(context).showSnackBar(new SnackBar(
                   content: Text(jsonDecode(response.body)['message'])));
               checkUserIsBlockedOrNot();
@@ -626,7 +615,9 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   }
 
   checkUserIsBlockedOrNot() async {
-    ChatApiController().checkUserIsBlockedOrNot(widget.userId).then((response) {
+    ChatApiController.instance
+        .checkUserIsBlockedOrNot(widget.userId)
+        .then((response) {
       Map data = jsonDecode(response.body);
       userIsBlocked = data['data'] ?? false;
       setState(() {});

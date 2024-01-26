@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:http/http.dart' as http;
 import 'package:notiboy/Model/chat/enumaration.dart';
 import 'package:notiboy/constant.dart';
+import 'package:notiboy/utils/color.dart';
 import 'package:notiboy/utils/response.dart';
 import 'package:provider/provider.dart';
 import 'package:web3dart/contracts.dart';
@@ -16,8 +20,15 @@ import '../../../../service/internet_service.dart';
 import '../../../../service/notifier.dart';
 import '../messages_screens.dart';
 import 'chat_service.dart';
+import 'package:web_socket_client/src/connection_state.dart' as status;
 
 class ChatApiController {
+  static ChatApiController _instance = ChatApiController._();
+
+  ChatApiController._();
+
+  static ChatApiController get instance => _instance;
+
   String XUSERADDRESS = Provider.of<MyChangeNotifier>(
           navigatorKey!.currentState!.context,
           listen: false)
@@ -31,117 +42,164 @@ class ChatApiController {
           listen: false)
       .token;
 
-
-  MessagesListModel? _messagesListModel;
+  MessagesListModel? messagesListModel;
 
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   final Connectivity _connectivity = Connectivity();
 
-  getMessageData(userId, context,Function callback) {
-
-    checkInternets().then((internet) async {
-      if (internet) {
-        await ChatApiController()
-            .callPaginatedUrl(
-            _messagesListModel?.paginationMetaData?.next ?? '', userId)
-            .then((response) async {
-          _messagesListModel =
-              MessagesListModel.fromJson(json.decode(response.body));
-          for (var element in _messagesListModel!.data!) {
-            Message message = Message(
-                id: element.uuid ?? '',
-                status: getStatus(element.status ?? ''),
-                message: element.message ?? '',
-                createdAt: element.sentTime.toString(),
-                sendBy: element.sender ?? '',
-                receiver: element.userB ?? '',
-                timeIsVisible: false);
-            if (Provider.of<MyChangeNotifier>(context, listen: false)
-                .messagesList
-                .isEmpty) {
-              Provider.of<MyChangeNotifier>(context, listen: false)
-                  .messagesListAdd(userId, message);
-            } else {
-              if (!(Provider.of<MyChangeNotifier>(context, listen: false)
+  getMessageData(String userId, context, {bool isFromIInternet = false}) {
+    if (userId.isNotEmpty) {
+      checkInternets().then((internet) async {
+        if (internet) {
+          await callPaginatedUrl(
+                  isFromIInternet
+                      ? ''
+                      : (messagesListModel?.paginationMetaData?.next ?? ''),
+                  userId)
+              .then((response) async {
+            messagesListModel =
+                MessagesListModel.fromJson(json.decode(response.body));
+            messagesListModel!.data
+                ?.sort((a, b) => (a.sentTime).compareTo(b.sentTime));
+            for (var element in messagesListModel!.data!) {
+              Message message = Message(
+                  id: element.uuid ?? '',
+                  status: getStatus(element.status ?? ''),
+                  message: element.message ?? '',
+                  createdAt: element.sentTime.toString(),
+                  sendBy: element.sender ?? '',
+                  receiver: element.userB ?? '',
+                  timeIsVisible: false);
+              if (Provider.of<MyChangeNotifier>(context, listen: false)
                       .messagesList[userId]
-                      ?.any((element) => element.id == message.id) ??
-                  false)) {
-                try {
-                  if (DateTime.fromMillisecondsSinceEpoch((int.parse(
-                              Provider.of<MyChangeNotifier>(context,
-                                          listen: false)
-                                      .messagesList[userId]
-                                      ?.first
-                                      .createdAt ??
-                                  '0') *
-                          1000))
-                      .isBefore(DateTime.fromMillisecondsSinceEpoch(
-                          (int.parse(message.createdAt) * 1000)))) {
-                    Provider.of<MyChangeNotifier>(context, listen: false)
-                        .messagesListInsert(userId, message);
-                  } else {
-                    Provider.of<MyChangeNotifier>(context, listen: false)
-                        .messagesListAdd(userId, message);
+                      ?.isEmpty ??
+                  true) {
+                Provider.of<MyChangeNotifier>(context, listen: false)
+                    .messagesListAdd(userId, message);
+              } else {
+                if (!(Provider.of<MyChangeNotifier>(context, listen: false)
+                        .messagesList[userId]
+                        ?.any((element) => element.id == message.id) ??
+                    true)) {
+                  try {
+                    if (DateTime.fromMillisecondsSinceEpoch((int.parse(
+                                Provider.of<MyChangeNotifier>(context,
+                                            listen: false)
+                                        .messagesList[userId]
+                                        ?.first
+                                        .createdAt ??
+                                    '0') *
+                            1000))
+                        .isBefore(DateTime.fromMillisecondsSinceEpoch(
+                            (int.parse(message.createdAt) * 1000)))) {
+                      Provider.of<MyChangeNotifier>(context, listen: false)
+                          .messagesListInsert(userId, message);
+                    } else {
+                      Provider.of<MyChangeNotifier>(context, listen: false)
+                          .messagesListAdd(userId, message);
+                    }
+                  } catch (e) {
+                    print(e);
                   }
-                } catch (e) {
-                  print(e);
                 }
               }
             }
-          }
-        }).catchError((onError) {});
-
-        // Provider.of<MyChangeNotifier>(context, listen: false)
-        //     .controller
-        //     .jumpTo(
-        //   Provider.of<MyChangeNotifier>(context, listen: false)
-        //       .messagesList[widget.userId]
-        //       ?.indexWhere((element) {
-        //     return element.id ==
-        //         (Provider.of<MyChangeNotifier>(context, listen: false)
-        //             .messagesList[widget.userId]
-        //             ?.where((element) =>
-        //         element.status == MessageStatus.unread)
-        //             .toList()
-        //             .last
-        //             .id);
-        //   }).toDouble() ??
-        //       0.0,
-        // );
-        if ((_messagesListModel?.paginationMetaData?.next?.isNotEmpty ??
-            false)) {
-          getMessageData(userId, context,callback);
+          }).catchError((onError) {});
         }
-      }
-    });
-    Provider.of<MyChatNotifier>(
-        navigatorKey!.currentState!.context,
-        listen: false).checkLastMessages(userId,callback);
+      });
+    }
   }
 
   checkInternet() {
+    bool isDialogOpen = false;
+    bool isFirstTime = true;
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
       (event) async {
         if (!(event == ConnectivityResult.none)) {
-          connectSocket();
+          if (isDialogOpen) {
+            isDialogOpen = false;
+            navigatorKey?.currentState?.pop();
+          }
+          if (!isFirstTime) {
+            isFirstTime = false;
+            await connectSocket();
+          }
+
+
           if (Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
                   listen: false)
               .isUserInMessagingScreen) {
+            Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                    listen: false)
+                .socket
+                ?.connection
+                .listen((status.ConnectionState events) {
+              if (event == ConnectivityResult.none ) {
+                EasyLoading.dismiss();
+              } else if (events is status.Connected ||
+                  events is status.Reconnected) {
+                EasyLoading.dismiss();
+              } else if (events is status.Connected ||
+                  events is status.Reconnecting) {
+                EasyLoading.show();
+              }
+            });
             getMessageData(
                 Provider.of<MyChangeNotifier>(
                         navigatorKey!.currentState!.context,
                         listen: false)
                     .currentUserAddress,
-                navigatorKey!.currentState!.context,(){});
+                navigatorKey!.currentState!.context,
+                isFromIInternet: true);
           }
+          Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                  listen: false)
+              .getChatList();
+        } else {
+            EasyLoading.dismiss();
+          isDialogOpen = true;
+          isDialogOpen = (await showDialogs()) ?? false;
         }
       },
     );
   }
 
+  showDialogs() {
+    return showDialog(
+      context: navigatorKey!.currentState!.context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: isDark
+              ? kIsWeb
+                  ? Clr.black
+                  : Clr.dark
+              : kIsWeb
+                  ? Clr.white
+                  : Clr.blueBg,
+          content: Text(
+            'It seems you are not connected to internet.',
+            style: TextStyle(color: isDark ? Clr.white : Clr.black),
+          ),
+        );
+      },
+    );
+  }
+
   Future connectSocket() {
+    if (Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                listen: false)
+            .socket
+            ?.connection
+            .state is Connected ||
+        (Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
+                listen: false)
+            .socket
+            ?.connection
+            .state is Reconnected)) {
+      return Future(() => true);
+    }
     Uri wsUrl = Uri.parse(
-        'wss://testnet.notiboy.com/api/stage/v1/ws/chat?chain=${chain}&address=${XUSERADDRESS}&token=${token}');
+        'wss://$domainUrl/ws/chat?chain=${chain}&address=${XUSERADDRESS}&token=${token}');
     Provider.of<MyChangeNotifier>(navigatorKey!.currentState!.context,
             listen: false)
         .socket = WebSocket(

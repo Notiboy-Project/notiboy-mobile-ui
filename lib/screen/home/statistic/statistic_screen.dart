@@ -2,15 +2,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:notiboy/Model/statistic/StatisticStatusModel.dart';
-import 'package:notiboy/service/internet_service.dart';
 import 'package:notiboy/utils/color.dart';
 import '../../../constant.dart';
 import 'package:notiboy/utils/string.dart';
 import 'package:notiboy/utils/widget.dart';
 import 'package:notiboy/widget/dropDown2.dart';
 import 'package:notiboy/widget/drop_down.dart';
-import 'package:notiboy/widget/loader.dart';
-import 'package:notiboy/widget/toast.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class StatisticScreen extends StatefulWidget {
